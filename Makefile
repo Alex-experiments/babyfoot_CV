@@ -1,6 +1,9 @@
 install:
-	cd dataset_creation && git clone https://github.com/2vin/yolo_annotation_tool.git
+	pip install poetry
+	poetry install || true 
 
-create_dataset:
-	@echo "Creation of the dataset_creation"
-	python3 dataset_creation/frames_extraction.py
+extract_frames:
+	poetry run python3 dataset_creation/frames_extraction.py
+
+annotate_images:
+	poetry run python3 dataset_creation/images_annotation.py

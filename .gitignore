@@ -188,6 +188,5 @@ cython_debug/
 #.idea/
 
 # Projetc folders 
-dataset_creation/raw_videos
-dataset_creation/raw_photos
-dataset_creation/yolo_annotation_tool
+dataset_creation/videos
+dataset_creation/images
