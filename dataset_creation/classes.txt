@@ -1,1 +1,3 @@
 ball
+red_player
+blue_player
