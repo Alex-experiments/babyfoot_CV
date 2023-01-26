@@ -5,11 +5,11 @@ import numpy as np
 import cv2
 import imutils
 
-from field_detection.abstract_class import FieldDetection
+from src.field_detection.abstract_class import FieldDetection
 
 DEFAULT_PARAMETERS = {
     "lower_filter": np.array([70, 100, 20]),
-    "upper_filter": np.array([80, 255, 255]),
+    "upper_filter": np.array([90, 255, 255]),
     "nb_blur": 20,
     "kernel_ratio_blur": 0.02,
     "threshold_value": 10,
