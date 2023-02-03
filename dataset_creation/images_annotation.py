@@ -1,43 +1,80 @@
 # This file comes from https://github.com/ManivannanMurugavel/Yolo-Annotation-Tool-New-
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        Object bounding box label tool
 # Purpose:     Label object bboxes for ImageNet Detection data
 # Author:      Qiushi
 # Created:     06/06/2014
 
 #
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 from __future__ import division
 from PIL import Image as PImage, ImageTk
 import os
 import sys
 import glob
 import random
-from os import getenv 
+from os import getenv
 
-if(sys.version_info[0] == 2):
+if sys.version_info[0] == 2:
     from Tkinter import *
     import tkMessageBox
-elif(sys.version_info[0] == 3):
+elif sys.version_info[0] == 3:
     from tkinter import *
     from tkinter import messagebox as tkMessageBox
     from tkinter import filedialog
 
 
-MAIN_COLORS = ['yellow','red','blue','black','green','darkolivegreen', 'darkseagreen', 'darkorange', 'darkslategrey', 'darkturquoise', 'darkgreen', 'darkviolet', 'darkgray', 'darkmagenta', 'darkblue', 'darkkhaki','darkcyan', 'darkred',  'darksalmon', 'darkslategray', 'darkgoldenrod', 'darkgrey', 'darkslateblue', 'darkorchid','skyblue','orange','pink','violet','brown','gold','Olive','Maroon', 'cyan','olivedrab', 'lightcyan', 'silver']
-home  = getenv("HOME")
+MAIN_COLORS = [
+    "yellow",
+    "red",
+    "blue",
+    "black",
+    "green",
+    "darkolivegreen",
+    "darkseagreen",
+    "darkorange",
+    "darkslategrey",
+    "darkturquoise",
+    "darkgreen",
+    "darkviolet",
+    "darkgray",
+    "darkmagenta",
+    "darkblue",
+    "darkkhaki",
+    "darkcyan",
+    "darkred",
+    "darksalmon",
+    "darkslategray",
+    "darkgoldenrod",
+    "darkgrey",
+    "darkslateblue",
+    "darkorchid",
+    "skyblue",
+    "orange",
+    "pink",
+    "violet",
+    "brown",
+    "gold",
+    "Olive",
+    "Maroon",
+    "cyan",
+    "olivedrab",
+    "lightcyan",
+    "silver",
+]
+home = getenv("HOME")
 # image sizes for the examples
 SIZE = 256, 256
 
 # paths
-CLASSES_PATH = os.path.join('dataset_creation', 'classes.txt')
-DEFAULT_IMAGES_PATH = os.path.join('dataset_creation', 'images')
+CLASSES_PATH = os.path.join("dataset_creation", "classes.txt")
+DEFAULT_IMAGES_PATH = os.path.join("dataset_creation", "images")
 
 classes = []
 
 try:
-    with open(CLASSES_PATH,'r') as cls:
+    with open(CLASSES_PATH, "r") as cls:
         classes = cls.readlines()
     classes = [cls.strip() for cls in classes]
 except IOError as io:
@@ -46,7 +83,8 @@ except IOError as io:
 
 COLORS = MAIN_COLORS
 
-class LabelTool():
+
+class LabelTool:
     def __init__(self, master):
         # set up the main frame
         self.curimg_h = 0
@@ -56,25 +94,25 @@ class LabelTool():
         self.parent.title("Yolo Annotation Tool")
         self.frame = Frame(self.parent)
         self.frame.pack(fill=BOTH, expand=1)
-        self.parent.resizable(width = FALSE, height = FALSE)
+        self.parent.resizable(width=FALSE, height=FALSE)
 
         # initialize global state
-        self.imageDir = ''
-        self.imageList= []
-        self.egDir = ''
+        self.imageDir = ""
+        self.imageList = []
+        self.egDir = ""
         self.egList = []
-        self.outDir = ''
+        self.outDir = ""
         self.cur = 0
         self.total = 0
         self.category = 0
-        self.imagename = ''
-        self.labelfilename = ''
+        self.imagename = ""
+        self.labelfilename = ""
         self.tkimg = None
 
         # initialize mouse state
         self.STATE = {}
-        self.STATE['click'] = 0
-        self.STATE['x'], self.STATE['y'] = 0, 0
+        self.STATE["click"] = 0
+        self.STATE["x"], self.STATE["y"] = 0, 0
 
         # reference to bbox
         self.bboxIdList = []
@@ -86,114 +124,134 @@ class LabelTool():
 
         # ----------------- GUI stuff ---------------------
         # dir entry & load
-        self.label = Label(self.frame, text = "Image Dir:")
-        self.label.grid(row = 0, column = 0, sticky = E)
+        self.label = Label(self.frame, text="Image Dir:")
+        self.label.grid(row=0, column=0, sticky=E)
         self.entry = Entry(self.frame)
         self.entry.insert(0, os.path.join(os.getcwd(), DEFAULT_IMAGES_PATH))
         self.entry.focus_set()
-        self.entry.bind('<Return>', self.loadEntry)
-        self.entry.bind('<Control-KeyRelease-a>', self.select_text_or_select_and_copy_text)
-        self.entry.grid(row = 0, column = 1, sticky = W+E)
-        self.explBtn = Button(self.frame,  
-                        text = "Browse", 
-                        command = self.dispPath)
-        self.explBtn.grid(row = 0, column = 2, sticky = W+S+E)
-        self.ldBtn = Button(self.frame, text = "Load",width = 11, command = self.loadDir)
-        self.ldBtn.grid(row = 0, column = 3, sticky = W+E)
+        self.entry.bind("<Return>", self.loadEntry)
+        self.entry.bind(
+            "<Control-KeyRelease-a>", self.select_text_or_select_and_copy_text
+        )
+        self.entry.grid(row=0, column=1, sticky=W + E)
+        self.explBtn = Button(self.frame, text="Browse", command=self.dispPath)
+        self.explBtn.grid(row=0, column=2, sticky=W + S + E)
+        self.ldBtn = Button(self.frame, text="Load", width=11, command=self.loadDir)
+        self.ldBtn.grid(row=0, column=3, sticky=W + E)
 
         # main panel for labeling
-        self.mainPanel = Canvas(self.frame, cursor='tcross')
+        self.mainPanel = Canvas(self.frame, cursor="tcross")
         self.mainPanel.bind("<Button-1>", self.mouseClick)
         self.mainPanel.bind("<Motion>", self.mouseMove)
-        self.parent.bind("<Escape>", self.cancelBBox)  # press <Espace> to cancel current bbox
+        self.parent.bind(
+            "<Escape>", self.cancelBBox
+        )  # press <Espace> to cancel current bbox
         self.parent.bind("s", self.cancelBBox)
-        self.parent.bind("<Left>", self.prevImage) # press 'a' to go backforward
-        self.parent.bind("<Right>", self.nextImage) # press 'd' to go forward
-        self.mainPanel.grid(row = 1, column = 1, rowspan = 4, sticky = W+N)
+        self.parent.bind("<Left>", self.prevImage)  # press 'a' to go backforward
+        self.parent.bind("<Right>", self.nextImage)  # press 'd' to go forward
+        self.mainPanel.grid(row=1, column=1, rowspan=4, sticky=W + N)
 
         # showing bbox info & delete bbox
         self.tkvar = StringVar(self.parent)
         self.cur_cls_id = 0
-        self.tkvar.set(classes[0]) # set the default option
-        self.popupMenu = OptionMenu(self.frame, self.tkvar, *classes,command = self.change_dropdown)
-        self.popupMenu.grid(row = 1, column =3, sticky = E+S)
-        self.indd= classes.index(classes[0])
+        self.tkvar.set(classes[0])  # set the default option
+        self.popupMenu = OptionMenu(
+            self.frame, self.tkvar, *classes, command=self.change_dropdown
+        )
+        self.popupMenu.grid(row=1, column=3, sticky=E + S)
+        self.indd = classes.index(classes[0])
         self.widge = self.popupMenu
-        self.widge.config(bg=COLORS[self.indd],fg='black', activebackground=COLORS[self.indd],    activeforeground='black')
-        for ind,j in enumerate(classes):
-            self.popupMenu['menu'].entryconfig(ind, activebackground = COLORS[ind],background=COLORS[ind])
+        self.widge.config(
+            bg=COLORS[self.indd],
+            fg="black",
+            activebackground=COLORS[self.indd],
+            activeforeground="black",
+        )
+        for ind, j in enumerate(classes):
+            self.popupMenu["menu"].entryconfig(
+                ind, activebackground=COLORS[ind], background=COLORS[ind]
+            )
         # self.controlsMap['var1'] = self.parent
-        self.tkvar.trace_variable('w',self.callbackFunc)
-        self.chooselbl = Label(self.frame, text = 'Choose Class:')
-        self.chooselbl.grid(row = 1, column = 2, sticky = W+S,columnspan=2)
-        self.lb1 = Label(self.frame, text = 'Bounding boxes:')
-        self.lb1.grid(row = 2, column = 2,  sticky = W+N,columnspan=2)
-        self.listbox = Listbox(self.frame, width = 30, height = 12)
-        self.listbox.grid(row = 3, column = 2, sticky = N,columnspan=2)
-        self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
-        self.btnDel.grid(row = 4, column = 2, sticky = W+E+N,columnspan=2)
-        self.btnClear = Button(self.frame, text = 'ClearAll', command = self.clearBBox)
-        self.btnClear.grid(row = 5, column = 2, sticky = W+E+N,columnspan=2)
+        self.tkvar.trace_variable("w", self.callbackFunc)
+        self.chooselbl = Label(self.frame, text="Choose Class:")
+        self.chooselbl.grid(row=1, column=2, sticky=W + S, columnspan=2)
+        self.lb1 = Label(self.frame, text="Bounding boxes:")
+        self.lb1.grid(row=2, column=2, sticky=W + N, columnspan=2)
+        self.listbox = Listbox(self.frame, width=30, height=12)
+        self.listbox.grid(row=3, column=2, sticky=N, columnspan=2)
+        self.btnDel = Button(self.frame, text="Delete", command=self.delBBox)
+        self.btnDel.grid(row=4, column=2, sticky=W + E + N, columnspan=2)
+        self.btnClear = Button(self.frame, text="ClearAll", command=self.clearBBox)
+        self.btnClear.grid(row=5, column=2, sticky=W + E + N, columnspan=2)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
-        self.ctrPanel.grid(row = 6, column = 1, columnspan = 2, sticky = W+E)
-        self.prevBtn = Button(self.ctrPanel, text='<< Prev', width = 10, command = self.prevImage)
-        self.prevBtn.pack(side = LEFT, padx = 5, pady = 3)
-        self.nextBtn = Button(self.ctrPanel, text='Next >>', width = 10, command = self.nextImage)
-        self.nextBtn.pack(side = LEFT, padx = 5, pady = 3)
-        self.progLabel = Label(self.ctrPanel, text = "Progress:     /    ")
-        self.progLabel.pack(side = LEFT, padx = 5)
-        self.tmpLabel = Label(self.ctrPanel, text = "Go to Image No.")
-        self.tmpLabel.pack(side = LEFT, padx = 5)
-        self.idxEntry = Entry(self.ctrPanel, width = 5)
-        self.idxEntry.pack(side = LEFT)
-        self.goBtn = Button(self.ctrPanel, text = 'Go', command = self.gotoImage)
-        self.goBtn.pack(side = LEFT)
+        self.ctrPanel.grid(row=6, column=1, columnspan=2, sticky=W + E)
+        self.prevBtn = Button(
+            self.ctrPanel, text="<< Prev", width=10, command=self.prevImage
+        )
+        self.prevBtn.pack(side=LEFT, padx=5, pady=3)
+        self.nextBtn = Button(
+            self.ctrPanel, text="Next >>", width=10, command=self.nextImage
+        )
+        self.nextBtn.pack(side=LEFT, padx=5, pady=3)
+        self.progLabel = Label(self.ctrPanel, text="Progress:     /    ")
+        self.progLabel.pack(side=LEFT, padx=5)
+        self.tmpLabel = Label(self.ctrPanel, text="Go to Image No.")
+        self.tmpLabel.pack(side=LEFT, padx=5)
+        self.idxEntry = Entry(self.ctrPanel, width=5)
+        self.idxEntry.pack(side=LEFT)
+        self.goBtn = Button(self.ctrPanel, text="Go", command=self.gotoImage)
+        self.goBtn.pack(side=LEFT)
 
         # example pannel for illustration
-        self.egPanel = Frame(self.frame, border = 10)
-        self.egPanel.grid(row = 1, column = 0, rowspan = 5, sticky = N)
-        self.tmpLabel2 = Label(self.egPanel, text = "Examples:")
-        self.tmpLabel2.pack(side = TOP, pady = 5)
+        self.egPanel = Frame(self.frame, border=10)
+        self.egPanel.grid(row=1, column=0, rowspan=5, sticky=N)
+        self.tmpLabel2 = Label(self.egPanel, text="Examples:")
+        self.tmpLabel2.pack(side=TOP, pady=5)
         self.egLabels = []
         for i in range(3):
             self.egLabels.append(Label(self.egPanel))
-            self.egLabels[-1].pack(side = TOP)
+            self.egLabels[-1].pack(side=TOP)
 
         # display mouse position
-        self.disp = Label(self.ctrPanel, text='')
-        self.disp.pack(side = RIGHT)
-        self.disp.config(text = 'x: 000, y: 000')
+        self.disp = Label(self.ctrPanel, text="")
+        self.disp.pack(side=RIGHT)
+        self.disp.config(text="x: 000, y: 000")
 
-        self.frame.columnconfigure(1, weight = 1)
-        self.frame.rowconfigure(4, weight = 1)
-    def callbackFunc(self,name,index,mode):
-        value=self.tkvar.get()
+        self.frame.columnconfigure(1, weight=1)
+        self.frame.rowconfigure(4, weight=1)
+
+    def callbackFunc(self, name, index, mode):
+        value = self.tkvar.get()
         widget = self.popupMenu
         print(value)
         ind = classes.index(value)
         for i in classes:
-            if i== value:
-                widget.config(bg=COLORS[ind],fg='black',
-                activebackground=COLORS[ind],
-                activeforeground='black')
+            if i == value:
+                widget.config(
+                    bg=COLORS[ind],
+                    fg="black",
+                    activebackground=COLORS[ind],
+                    activeforeground="black",
+                )
 
-        # 
+        #
         print(type(widget))
 
-    def select_text_or_select_and_copy_text(self,event):
-        event.widget.select_range(0, 'end')
+    def select_text_or_select_and_copy_text(self, event):
+        event.widget.select_range(0, "end")
 
-    def loadEntry(self,event):
+    def loadEntry(self, event):
         self.loadDir()
 
     def dispPath(self):
-        directory = filedialog.askdirectory(initialdir = home)
-        self.entry.delete(0,END)
-        self.entry.insert(0,directory)
+        directory = filedialog.askdirectory(initialdir=home)
+        self.entry.delete(0, END)
+        self.entry.insert(0, directory)
         self.loadDir()
-    def loadDir(self, dbg = False):
+
+    def loadDir(self, dbg=False):
         if not dbg:
             try:
                 s = self.entry.get()
@@ -202,55 +260,61 @@ class LabelTool():
                 self.category = s
                 # directory = filedialog.askdirectory(initialdir = home)
             except ValueError as ve:
-                tkMessageBox.showerror("Error!", message = "The folder should be numbers")
+                tkMessageBox.showerror("Error!", message="The folder should be numbers")
                 return
-        if not os.path.isdir('%s' % self.category):
-           tkMessageBox.showerror("Error!", message = "The specified dir doesn't exist!")
-           return
+        if not os.path.isdir("%s" % self.category):
+            tkMessageBox.showerror("Error!", message="The specified dir doesn't exist!")
+            return
         # get image list
-        self.imageDir = os.path.join(r'./Images', '%s' %(self.category))
-        self.imageList = glob.glob(os.path.join(self.imageDir, '*.jpg'))
+        self.imageDir = os.path.join(r"./Images", "%s" % (self.category))
+        self.imageList = glob.glob(os.path.join(self.imageDir, "*.jpg"))
+        idx_frame = lambda x: int(x.split("_")[-1].split(".")[0])
+        self.imageList.sort(key=idx_frame)
         if len(self.imageList) == 0:
-            print('No .jpg images found in the specified dir!')
-            tkMessageBox.showerror("Error!", message = "No .jpg images found in the specified dir!")
+            print("No .jpg images found in the specified dir!")
+            tkMessageBox.showerror(
+                "Error!", message="No .jpg images found in the specified dir!"
+            )
             return
 
         # default to the 1st image in the collection
         self.cur = 1
         self.total = len(self.imageList)
 
-         # set up output dir
-        if not os.path.exists('./Labels'):
-            os.mkdir('./Labels')
-        self.outDir = os.path.join(r'./Labels', '%s' %(self.category))
+        # set up output dir
+        if not os.path.exists("./Labels"):
+            os.mkdir("./Labels")
+        self.outDir = os.path.join(r"./Labels", "%s" % (self.category))
         if not os.path.exists(self.outDir):
             os.mkdir(self.outDir)
         self.loadImage()
-        print('%d images loaded from %s' %(self.total, s))
+        print("%d images loaded from %s" % (self.total, s))
 
     def loadImage(self):
         # load image
         imagepath = self.imageList[self.cur - 1]
         self.img = PImage.open(imagepath)
-        
+
         # resize
         max_w, max_h = (1582, 942)
         w, h = self.img.size
-        coeff = max(w/max_w, h/max_h)
+        coeff = max(w / max_w, h / max_h)
         if coeff > 1:
             self.img = self.img.resize((int(w / coeff), int(h / coeff)))
 
         self.curimg_w, self.curimg_h = self.img.size
         self.tkimg = ImageTk.PhotoImage(self.img)
-        self.mainPanel.config(width = max(self.tkimg.width(), 400), height = max(self.tkimg.height(), 400))
-        self.mainPanel.create_image(0, 0, image = self.tkimg, anchor=NW)
-        self.progLabel.config(text = "%04d/%04d" %(self.cur, self.total))
+        self.mainPanel.config(
+            width=max(self.tkimg.width(), 400), height=max(self.tkimg.height(), 400)
+        )
+        self.mainPanel.create_image(0, 0, image=self.tkimg, anchor=NW)
+        self.progLabel.config(text="%04d/%04d" % (self.cur, self.total))
 
         # load labels
         self.clearBBox()
         # self.imagename = os.path.split(imagepath)[-1].split('.')[0]
         self.imagename = os.path.splitext(os.path.basename(imagepath))[0]
-        labelname = self.imagename + '.txt'
+        labelname = self.imagename + ".txt"
         self.labelfilename = os.path.join(self.outDir, labelname)
         bbox_cnt = 0
         if os.path.exists(self.labelfilename):
@@ -261,72 +325,95 @@ class LabelTool():
                     tmp = self.deconvert(yolo_data[1:])
                     self.bboxList.append(tuple(tmp))
                     self.bboxListCls.append(yolo_data[0])
-                    tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
-                                                            tmp[2], tmp[3], \
-                                                            width = 2, \
-                                                            outline = COLORS[int(yolo_data[0])])
-                    
-                    self.bboxIdList.append(tmpId)
-                    self.listbox.insert(END, '(%d, %d) -> (%d, %d) -> (%s)' %(tmp[0], tmp[1], tmp[2], tmp[3], classes[int(yolo_data[0])]))
-                    self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[int(yolo_data[0])])
-        
-    def saveImage(self):
-        with open(self.labelfilename, 'w') as f:
-            for bbox,bboxcls in zip(self.bboxList,self.bboxListCls):
-                xmin,ymin,xmax,ymax = bbox
-                b = (float(xmin), float(xmax), float(ymin), float(ymax))
-                bb = self.convert((self.curimg_w,self.curimg_h), b)
-                f.write(str(bboxcls) + " " + " ".join([str(a) for a in bb]) + '\n')
-        print('Image No. %d saved' %(self.cur))
+                    tmpId = self.mainPanel.create_rectangle(
+                        tmp[0],
+                        tmp[1],
+                        tmp[2],
+                        tmp[3],
+                        width=2,
+                        outline=COLORS[int(yolo_data[0])],
+                    )
 
+                    self.bboxIdList.append(tmpId)
+                    self.listbox.insert(
+                        END,
+                        "(%d, %d) -> (%d, %d) -> (%s)"
+                        % (tmp[0], tmp[1], tmp[2], tmp[3], classes[int(yolo_data[0])]),
+                    )
+                    self.listbox.itemconfig(
+                        len(self.bboxIdList) - 1, fg=COLORS[int(yolo_data[0])]
+                    )
+
+    def saveImage(self):
+        with open(self.labelfilename, "w") as f:
+            for bbox, bboxcls in zip(self.bboxList, self.bboxListCls):
+                xmin, ymin, xmax, ymax = bbox
+                b = (float(xmin), float(xmax), float(ymin), float(ymax))
+                bb = self.convert((self.curimg_w, self.curimg_h), b)
+                f.write(str(bboxcls) + " " + " ".join([str(a) for a in bb]) + "\n")
+        print("Image No. %d saved" % (self.cur))
 
     def mouseClick(self, event):
-        if self.STATE['click'] == 0:
-            self.STATE['x'], self.STATE['y'] = event.x, event.y
+        if self.STATE["click"] == 0:
+            self.STATE["x"], self.STATE["y"] = event.x, event.y
         else:
-            x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
-            y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
+            x1, x2 = min(self.STATE["x"], event.x), max(self.STATE["x"], event.x)
+            y1, y2 = min(self.STATE["y"], event.y), max(self.STATE["y"], event.y)
             self.bboxList.append((x1, y1, x2, y2))
             self.bboxListCls.append(self.cur_cls_id)
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '(%d, %d) -> (%d, %d) -> (%s)' %(x1, y1, x2, y2, classes[self.cur_cls_id]))
-            self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[self.cur_cls_id])
-        self.STATE['click'] = 1 - self.STATE['click']
+            self.listbox.insert(
+                END,
+                "(%d, %d) -> (%d, %d) -> (%s)"
+                % (x1, y1, x2, y2, classes[self.cur_cls_id]),
+            )
+            self.listbox.itemconfig(
+                len(self.bboxIdList) - 1, fg=COLORS[self.cur_cls_id]
+            )
+        self.STATE["click"] = 1 - self.STATE["click"]
 
     def mouseMove(self, event):
-        self.disp.config(text = 'x: %.3d, y: %.3d' %(event.x, event.y))
+        self.disp.config(text="x: %.3d, y: %.3d" % (event.x, event.y))
         if self.tkimg:
             if self.hl:
                 self.mainPanel.delete(self.hl)
-            self.hl = self.mainPanel.create_line(0, event.y, self.tkimg.width(), event.y, width = 2)
+            self.hl = self.mainPanel.create_line(
+                0, event.y, self.tkimg.width(), event.y, width=2
+            )
             if self.vl:
                 self.mainPanel.delete(self.vl)
-            self.vl = self.mainPanel.create_line(event.x, 0, event.x, self.tkimg.height(), width = 2)
-        if 1 == self.STATE['click']:
+            self.vl = self.mainPanel.create_line(
+                event.x, 0, event.x, self.tkimg.height(), width=2
+            )
+        if 1 == self.STATE["click"]:
             if self.bboxId:
                 self.mainPanel.delete(self.bboxId)
-            self.bboxId = self.mainPanel.create_rectangle(self.STATE['x'], self.STATE['y'], \
-                                                            event.x, event.y, \
-                                                            width = 2, \
-                                                            outline = COLORS[self.cur_cls_id])
+            self.bboxId = self.mainPanel.create_rectangle(
+                self.STATE["x"],
+                self.STATE["y"],
+                event.x,
+                event.y,
+                width=2,
+                outline=COLORS[self.cur_cls_id],
+            )
 
     def cancelBBox(self, event):
-        if 1 == self.STATE['click']:
+        if 1 == self.STATE["click"]:
             if self.bboxId:
                 self.mainPanel.delete(self.bboxId)
                 self.bboxId = None
-                self.STATE['click'] = 0
+                self.STATE["click"] = 0
 
     def delBBox(self):
         sel = self.listbox.curselection()
-        if len(sel) != 1 :
+        if len(sel) != 1:
             return
         idx = int(sel[0])
         self.mainPanel.delete(self.bboxIdList[idx])
         self.bboxIdList.pop(idx)
         self.bboxList.pop(idx)
-        print(self.bboxListCls,idx)
+        print(self.bboxListCls, idx)
         self.bboxListCls.pop(idx)
         self.listbox.delete(idx)
 
@@ -338,21 +425,21 @@ class LabelTool():
         self.bboxList = []
         self.bboxListCls = []
 
-    def prevImage(self, event = None):
+    def prevImage(self, event=None):
         self.saveImage()
         if self.cur > 1:
             self.cur -= 1
             self.loadImage()
         else:
-            tkMessageBox.showerror("Information!", message = "This is first image")
+            tkMessageBox.showerror("Information!", message="This is first image")
 
-    def nextImage(self, event = None):
+    def nextImage(self, event=None):
         self.saveImage()
         if self.cur < self.total:
             self.cur += 1
             self.loadImage()
         else:
-            tkMessageBox.showerror("Information!", message = "All images annotated")
+            tkMessageBox.showerror("Information!", message="All images annotated")
 
     def gotoImage(self):
         idx = int(self.idxEntry.get())
@@ -360,41 +447,44 @@ class LabelTool():
             self.saveImage()
             self.cur = idx
             self.loadImage()
-    def change_dropdown(self,*args):
+
+    def change_dropdown(self, *args):
         cur_cls = self.tkvar.get()
         ind = classes.index(cur_cls)
         # self.popupMenu['menu'].entryconfig(ind, background=COLORS[ind])
         self.cur_cls_id = ind
 
-    def convert(self,size, box):
-        dw = 1./size[0]
-        dh = 1./size[1]
-        x = (box[0] + box[1])/2.0
-        y = (box[2] + box[3])/2.0
+    def convert(self, size, box):
+        dw = 1.0 / size[0]
+        dh = 1.0 / size[1]
+        x = (box[0] + box[1]) / 2.0
+        y = (box[2] + box[3]) / 2.0
         w = box[1] - box[0]
         h = box[3] - box[2]
-        x = x*dw
-        w = w*dw
-        y = y*dh
-        h = h*dh
-        return (x,y,w,h)
-    def deconvert(self,annbox):
+        x = x * dw
+        w = w * dw
+        y = y * dh
+        h = h * dh
+        return (x, y, w, h)
+
+    def deconvert(self, annbox):
         ox = float(annbox[0])
         oy = float(annbox[1])
         ow = float(annbox[2])
         oh = float(annbox[3])
-        x = ox*self.curimg_w
-        y = oy*self.curimg_h
-        w = ow*self.curimg_w
-        h = oh*self.curimg_h
-        xmax = (((2*x)+w)/2)
-        xmin = xmax-w
-        ymax = (((2*y)+h)/2)
-        ymin = ymax-h
-        return [int(xmin),int(ymin),int(xmax),int(ymax)]
+        x = ox * self.curimg_w
+        y = oy * self.curimg_h
+        w = ow * self.curimg_w
+        h = oh * self.curimg_h
+        xmax = ((2 * x) + w) / 2
+        xmin = xmax - w
+        ymax = ((2 * y) + h) / 2
+        ymin = ymax - h
+        return [int(xmin), int(ymin), int(xmax), int(ymax)]
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     root = Tk()
     tool = LabelTool(root)
-    root.resizable(width =  True, height = True)
+    root.resizable(width=True, height=True)
     root.mainloop()

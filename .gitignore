@@ -188,6 +188,7 @@ cython_debug/
 #.idea/
 
 # Projetc folders 
+experiment*
 dataset_creation/videos
 dataset_creation/images
 baby-foot-dataset

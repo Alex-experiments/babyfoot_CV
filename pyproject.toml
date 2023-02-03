@@ -11,6 +11,8 @@ python = "^3.10"
 pillow = "^9.3.0"
 opencv-python = "^4.6"
 tqdm = "^4.64.1"
+imutils = "^0.5.4"
+pytest = "^7.2.1"
 
 
 [build-system]

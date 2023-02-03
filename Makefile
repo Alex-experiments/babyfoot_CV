@@ -14,3 +14,6 @@ pull-dataset:
 
 push-dataset:
 	cd baby-foot-dataset && git add * && git commit -m "Add images" && git push origin main
+
+pytest:
+	poetry run pytest test
