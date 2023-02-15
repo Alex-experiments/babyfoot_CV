@@ -16,7 +16,8 @@ def extract_object_from_annotation(
 ) -> List[List[float]]:
     objects = annotation.loc[annotation["label"] == label].to_dict("records")
     return [
-        [object["x"], object["y"], object["lx"], object["ly"]] for object in objects
+        [np.array([object["x"], object["y"]]), np.array([object["lx"], object["ly"]])]
+        for object in objects
     ]
 
 
