@@ -27,10 +27,7 @@ class DetectedBluePlayer(DetectedObject):
     pass
 
 
-@dataclass
-class Coordinates:
-    x: float
-    y: float
+Coordinates = Tuple[float, float]
 
 
 @dataclass
@@ -39,6 +36,40 @@ class DetectedField:
 
     def __post_init__(self):
         assert len(self.corners) == 4
+
+    def order(self):
+        # 1st corner = leftmost point
+        idx1 = 0
+        x1, y1 = self.corners[0]
+        for idx in range(1, 4):
+            if self.corners[idx] < (x1, y1):
+                idx1, x1 = idx, self.corners[idx][0]
+
+        # Then in clockwise order
+        points = self.corners.copy()
+        points.pop(idx1)
+        vectors = [(x - x1, y - y1) for x, y in points]
+        cos_angles = [
+            y / (x**2 + y**2) ** 0.5 for x, y in vectors
+        ]  # cosinus of the angle with y axis
+        order = [1, 2, 3]
+        order.sort(key=lambda x: cos_angles[x - 1])
+        res = [self.corners[idx1], *[self.corners[i] for i in order]]
+
+        # Shift if the 1st side is a width instead of a length
+        lengths_squared = [
+            (res[i][0] - res[(i + 1) % 4][0]) ** 2
+            + (res[i][1] - res[(i + 1) % 4][1]) ** 2
+            for i in range(4)
+        ]
+        if (
+            lengths_squared[0] + lengths_squared[2]
+            <= lengths_squared[1] + lengths_squared[3]
+        ):
+            head = res.pop()
+            res = [head] + res
+
+        self.corners = res
 
 
 @dataclass
