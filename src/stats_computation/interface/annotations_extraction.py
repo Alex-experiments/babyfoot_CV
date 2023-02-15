@@ -20,16 +20,14 @@ def extract_object_from_annotation(
     ]
 
 
-def extract_detection_from_file(filepath: str) -> Detection:
+def extract_detection_from_file(
+    filepath: str, field: DetectedField = None
+) -> Detection:
     annotation = pd.read_csv(
         filepath,
         sep=" ",
         names=["label", "x", "y", "lx", "ly"],
     )
-
-    # Field extraction
-    field = None  # TODO
-
     # Ball extraction
     balls = extract_object_from_annotation(annotation, LABEL_BALL)
     ball = None if len(balls) == 0 else DetectedBall(*(balls[0]))
@@ -65,9 +63,11 @@ def list_files(path: str) -> Tuple[List[str], List[str]]:
     return images, annotations
 
 
-def extract_detection_from_folder(path: str) -> AnnotatedSequence:
+def extract_detection_from_folder(
+    path: str, field: DetectedField = None
+) -> AnnotatedSequence:
     images, annotations = list_files(path)
     for image, annotation in zip(images, annotations):
         im = cv2.imread(os.path.join(path, image))
-        annotation = extract_detection_from_file(os.path.join(path, annotation))
+        annotation = extract_detection_from_file(os.path.join(path, annotation), field)
         yield im, annotation
