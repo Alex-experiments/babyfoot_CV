@@ -43,7 +43,8 @@ def animate(
 
 # Default parameters of AnimationFrame
 
-SECOND_FIELD_LENGTH = 800
+RPR_FIELD_LENGTH = 600
+RPR_MARGIN = 0.1
 
 COLOR_BALL = (0, 255, 255)
 COLOR_RED = (0, 0, 255)
@@ -56,9 +57,10 @@ RECTANGLE_THICKNESS = 1
 @dataclass
 class AnimationFrame:
     fs: FieldState
-    second_field_length: int = SECOND_FIELD_LENGTH
-    second_field_width: int = int(SECOND_FIELD_LENGTH * FIELD_WIDTH / FIELD_LENGTH)
-    second_ball_radius: int = int(SECOND_FIELD_LENGTH * BALL_RADIUS / FIELD_LENGTH)
+    rpr_field_length: int = RPR_FIELD_LENGTH
+    rpr_field_width: int = int(RPR_FIELD_LENGTH * FIELD_WIDTH / FIELD_LENGTH)
+    rpr_ball_radius: int = int(RPR_FIELD_LENGTH * BALL_RADIUS / FIELD_LENGTH)
+    rpr_margin: float = RPR_MARGIN
     color_ball: Tuple[int, int, int] = COLOR_BALL
     color_red: Tuple[int, int, int] = COLOR_RED
     color_blue: Tuple[int, int, int] = COLOR_BLUE
@@ -66,20 +68,34 @@ class AnimationFrame:
     rectangle_thickness: int = RECTANGLE_THICKNESS
 
     def __post_init__(self):
+        # Main window
         self.main_img = self.fs.image
-        self.main_size = self.main_img.shape[:-1][::-1]
-        self.second_img = np.zeros(
-            shape=[self.second_field_length, self.second_field_width, 3], dtype=np.uint8
+        self.main_size = np.array(self.main_img.shape[:-1][::-1])
+
+        # Representation window
+        self.rpr_img = np.zeros(
+            shape=[
+                int(self.rpr_field_length * (1 + 2 * self.rpr_margin)),
+                int(self.rpr_field_width * (1 + 2 * self.rpr_margin)),
+                3,
+            ],
+            dtype=np.uint8,
         )
-        self.second_size = self.second_img.shape[:-1][::-1]
+        self.rpr_size = np.array([self.rpr_field_width, self.rpr_field_length])
+        self.rpr_margin_vect = np.array(
+            [
+                self.rpr_field_width * self.rpr_margin,
+                self.rpr_field_length * self.rpr_margin,
+            ]
+        )
 
     def draw(self):
-        self.draw_rectangles_all()
+        self.draw_main()
         self.draw_representation()
 
     def show(self):
         cv2.imshow("Animation", self.main_img)
-        cv2.imshow("Representation", self.second_img)
+        cv2.imshow("Representation", self.rpr_img)
 
     def convert_rectangles(
         self, obj: DetectedObject
@@ -127,23 +143,35 @@ class AnimationFrame:
                 self.rectangle_thickness,
             )
 
-    def draw_rectangles_all(self) -> None:
+    def draw_main(self) -> None:
         self.draw_rectangles_ball()
         self.draw_rectangles_players()
         self.draw_rectangles_field()
 
     def draw_representation(self) -> None:
+        self.draw_field_representation()
         self.draw_ball_representation()
 
+    def draw_field_representation(self) -> None:
+        pt1 = np.array([0, 0])
+        pt2 = np.array([1, 1])
+        cv2.rectangle(
+            self.rpr_img,
+            self.convert_relative_position(pt1),
+            self.convert_relative_position(pt2),
+            self.color_field,
+            self.rectangle_thickness,
+        )
+
     def convert_relative_position(self, rel_pos: Coordinates) -> Coordinates:
-        return (rel_pos * self.second_size).astype(int)
+        return (rel_pos * self.rpr_size + self.rpr_margin_vect).astype(int)
 
     def draw_ball_representation(self) -> None:
         if self.fs.detection.ball is not None:
             cv2.circle(
-                self.second_img,
+                self.rpr_img,
                 self.convert_relative_position(self.fs.ball_pos),
-                self.second_ball_radius,
+                self.rpr_ball_radius,
                 self.color_ball,
                 -1,
             )
