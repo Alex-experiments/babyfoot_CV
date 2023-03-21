@@ -6,12 +6,8 @@ import numpy as np
 import cv2
 
 from src.stats_computation.interface.classes import *
-from src.stats_computation.field_state import (
-    FieldState,
-    FIELD_LENGTH,
-    FIELD_WIDTH,
-    BALL_RADIUS,
-)
+from src.stats_computation.field_state import *
+from src.stats_computation.field_measures import *
 
 
 def animate(
@@ -131,9 +127,13 @@ class AnimationFrame:
                 )
 
     def draw_rectangles_field(self) -> None:
-        for corners in [self.fs.detection.field.corners, self.fs.margin_field.corners]:
+        for field in [
+            self.fs.detection.field,
+            self.fs.margin_field,
+            self.fs.shifted_field,
+        ]:
             pts = np.array(
-                [(corner * self.main_size).astype(int) for corner in corners],
+                [(corner * self.main_size).astype(int) for corner in field.corners],
             ).reshape(-1, 1, 2)
             cv2.polylines(
                 self.main_img,
@@ -151,6 +151,20 @@ class AnimationFrame:
     def draw_representation(self) -> None:
         self.draw_field_representation()
         self.draw_ball_representation()
+        self.draw_players_representation()
+
+    def draw_bar_representation(
+        self, rel_x: float, color: Tuple[int, int, int]
+    ) -> None:
+        pt1 = np.array([0, rel_x])
+        pt2 = np.array([1, rel_x])
+        cv2.line(
+            self.rpr_img,
+            self.convert_relative_position(pt1),
+            self.convert_relative_position(pt2),
+            color,
+            self.rectangle_thickness,
+        )
 
     def draw_field_representation(self) -> None:
         pt1 = np.array([0, 0])
@@ -162,6 +176,26 @@ class AnimationFrame:
             self.color_field,
             self.rectangle_thickness,
         )
+        self.draw_bar_representation(0.5, self.color_field)
+
+        if self.fs.is_red_up:
+            color_up = self.color_red
+            color_down = self.color_blue
+        else:
+            color_up = self.color_blue
+            color_down = self.color_red
+
+        # Team on top
+        self.draw_bar_representation(GOAL_REL_X, color_up)
+        self.draw_bar_representation(DEFENSE_REL_X, color_up)
+        self.draw_bar_representation(MIDDLE_REL_X, color_up)
+        self.draw_bar_representation(ATTACK_REL_X, color_up)
+
+        # Team on bottom
+        self.draw_bar_representation(1 - GOAL_REL_X, color_down)
+        self.draw_bar_representation(1 - DEFENSE_REL_X, color_down)
+        self.draw_bar_representation(1 - MIDDLE_REL_X, color_down)
+        self.draw_bar_representation(1 - ATTACK_REL_X, color_down)
 
     def convert_relative_position(self, rel_pos: Coordinates) -> Coordinates:
         return (rel_pos * self.rpr_size + self.rpr_margin_vect).astype(int)
@@ -170,11 +204,26 @@ class AnimationFrame:
         if self.fs.detection.ball is not None:
             cv2.circle(
                 self.rpr_img,
-                self.convert_relative_position(self.fs.ball_pos),
+                self.convert_relative_position(self.fs.ball),
                 self.rpr_ball_radius,
                 self.color_ball,
                 -1,
             )
+
+    def draw_players_representation(self) -> None:
+        for (color, players) in zip(
+            [self.color_red, self.color_blue],
+            [self.fs.red_players, self.fs.blue_players],
+        ):
+            for position in players:
+                for player in players[position]:
+                    cv2.circle(
+                        self.rpr_img,
+                        self.convert_relative_position(player),
+                        self.rpr_ball_radius,  # TODO
+                        color,
+                        -1,
+                    )
 
 
 if __name__ == "__main__":

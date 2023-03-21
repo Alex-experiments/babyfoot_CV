@@ -1,29 +1,10 @@
 from dataclasses import dataclass
 
-from sklearn.cluster import DBSCAN
-
 from src.stats_computation.interface.classes import *
-from src.stats_computation.utils import Perspective
+from src.stats_computation.utils import Perspective, shift_field, parse_players
+from src.stats_computation.field_measures import FIELD_HEIGHT
 
 FIELD_MARGIN = 0.1
-
-DBSCAN_EPS = 0.1
-DBSCAN_MIN_SAMPLES = 1
-
-# Field measures
-
-FIELD_LENGTH = 1.0
-FIELD_WIDTH = 0.57
-BALL_RADIUS = 0.02
-
-GOAL_REL_X = 0.003
-DEFENSE_REL_X = 0.147
-MIDDLE_REL_X = 0.432
-ATTACK_REL_X = 0.717
-
-DEFENSE_REL_W = 0.241
-MIDDLE_REL_W = 0.422
-ATTACK_REL_W = 0.341
 
 
 @dataclass
@@ -46,7 +27,22 @@ class FieldState:
 
     def init_perspective(self):
         self.perspective = Perspective(self.detection.field)
+        self.shifted_field = shift_field(self.detection.field, FIELD_HEIGHT)
+        self.shifted_perspective = Perspective(self.shifted_field)
 
     def compute_relative_position(self):
+        # Ball
         if self.detection.ball is not None:
-            self.ball_pos = self.perspective([self.detection.ball.pos])[0]
+            self.ball = self.perspective([self.detection.ball.pos])[0]
+        # Players
+        red_players = self.shifted_perspective(
+            [player.pos for player in self.detection.red_players]
+        )
+        blue_players = self.shifted_perspective(
+            [player.pos for player in self.detection.blue_players]
+        )
+        self.is_red_up = (
+            np.min(red_players, axis=0)[1] < np.min(blue_players, axis=0)[1]
+        )
+        self.red_players = parse_players(red_players, self.is_red_up)
+        self.blue_players = parse_players(blue_players, not self.is_red_up)
