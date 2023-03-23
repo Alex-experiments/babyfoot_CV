@@ -71,3 +71,11 @@ def smooth_players(
         np.array([mid - rel_w_bar / 2 + i * rel_w_bar / (len(players) - 1), rel_x_bar])
         for i in range(len(players))
     ]
+
+
+def distance_cm(pt1: Coordinates, pt2: Coordinates) -> float:
+    if pt1 is None or pt2 is None:
+        return None
+    vect = pt1 - pt2
+    res = vect[0] ** 2 * FIELD_LENGTH + vect[1] ** 2 * FIELD_WIDTH
+    return res**0.5 * CM_PER_UNIT

@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 
 from src.stats_computation.interface.classes import *
-from src.stats_computation.game_state import *
+from src.stats_computation.stats_extraction import *
 from src.stats_computation.field_measures import *
 
 
@@ -51,7 +51,7 @@ RECTANGLE_THICKNESS = 1
 
 
 @dataclass
-class Animation(GameState):
+class Animation(StatsExtraction):
     rpr_field_length: int = RPR_FIELD_LENGTH
     rpr_field_width: int = int(RPR_FIELD_LENGTH * FIELD_WIDTH / FIELD_LENGTH)
     rpr_ball_radius: int = int(RPR_FIELD_LENGTH * BALL_RADIUS / FIELD_LENGTH)

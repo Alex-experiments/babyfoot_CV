@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from src.stats_computation.interface.classes import *
 from src.stats_computation.utils import Perspective, shift_field, parse_players
-from src.stats_computation.field_measures import FIELD_HEIGHT
+from src.stats_computation.field_measures import PLAYERS_HEIGHT
 
 FIELD_MARGIN = 0.1
 
@@ -17,7 +17,7 @@ class GameState:
     blue_players: Dict[str, List[Coordinates]] = None
 
     def __post_init__(self):
-        self.nb_frame = 0  # idx of the current frame
+        self.frame_idx = 0  # idx of the current frame
         # Internal variables
         self.margin_field = None  # field with margin, used to ignore what's outside
         self.perspective = (
@@ -28,9 +28,14 @@ class GameState:
         self.is_red_up = (
             None  # True if red team is above (meaning their goal is at y = 0)
         )
+        self.history = (
+            []
+        )  # list of reccords of the form {"ball": ..., "red_players": ..., "blue_players": ...}, the last is of index -1
 
     def update(self, detection: Detection):
-        self.nb_frame += 1
+        self.frame_idx += 1
+        if self.frame_idx > 1:
+            self.update_history()
         self.update_field_margin(detection)
         self.update_perspective(detection)
         self.update_relative_positions(detection)
@@ -47,7 +52,7 @@ class GameState:
 
     def update_perspective(self, detection: Detection) -> None:
         self.perspective = Perspective(detection.field)
-        self.shifted_field = shift_field(detection.field, FIELD_HEIGHT)
+        self.shifted_field = shift_field(detection.field, PLAYERS_HEIGHT)
         self.shifted_perspective = Perspective(self.shifted_field)
 
     def update_relative_positions(self, detection: Detection) -> None:
@@ -68,3 +73,11 @@ class GameState:
         )
         self.red_players = parse_players(red_players, self.is_red_up)
         self.blue_players = parse_players(blue_players, not self.is_red_up)
+
+    def update_history(self) -> None:
+        current_data = {
+            "ball": self.ball,
+            "red_players": self.red_players,
+            "blue_players": self.blue_players,
+        }
+        self.history.append(current_data)
