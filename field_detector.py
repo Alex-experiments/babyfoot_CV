@@ -4,7 +4,6 @@ import numpy as np
 import cv2
 from imutils import rotate
 
-from abstract_class import FieldDetection
 
 DEFAULT_PARAMETERS = {
     "lower_filter": np.array([70, 100, 20]),
@@ -13,14 +12,13 @@ DEFAULT_PARAMETERS = {
 }
 
 
-class ChromaticDetection(FieldDetection):
+class ChromaticDetection():
     intermediate_image_saving: bool = False
     lower_filter: np.ndarray = DEFAULT_PARAMETERS["lower_filter"]
     upper_filter: np.ndarray = DEFAULT_PARAMETERS["upper_filter"]
     threshold_value: int = DEFAULT_PARAMETERS["threshold_value"]
 
     def __init__(self, intermediate_image_saving=False):
-        super(FieldDetection, self).__init__()
         self.intermediate_image_saving = intermediate_image_saving
         r=5
         self.circular_kernel = np.fromfunction(lambda x, y: ((x-r)**2 + (y-r)**2 <= r**2)*1, (2*r+1, 2*r+1), dtype=int).astype(np.uint8)
