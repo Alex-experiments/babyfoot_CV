@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from src.stats_computation.interface.classes import AnnotatedSequence, DetectedField
+from src.stats_computation.interface.classes import DetectionSequence, DetectedField
 from src.stats_computation.interface.annotations_extraction import (
     extract_detection_from_folder,
 )
@@ -16,5 +16,5 @@ FIELD_CORNERS = [
 ]
 
 
-def import_test_sequence() -> AnnotatedSequence:
+def import_test_sequence() -> DetectionSequence:
     return extract_detection_from_folder(TEST_FOLDER_PATH, DetectedField(FIELD_CORNERS))

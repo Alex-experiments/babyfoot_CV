@@ -82,4 +82,4 @@ class Image(np.ndarray):
     pass
 
 
-AnnotatedSequence = Iterator[Tuple[Image, Detection]]
+DetectionSequence = Iterator[Tuple[Image, Detection]]

@@ -6,17 +6,18 @@ import numpy as np
 import cv2
 
 from src.stats_computation.interface.classes import *
-from src.stats_computation.field_state import *
+from src.stats_computation.game_state import *
 from src.stats_computation.field_measures import *
 
 
 def animate(
-    itr: AnnotatedSequence,
+    itr: DetectionSequence,
     fps: int = 30,
 ):
     i = 0
     seq = [x for x in itr]
     t0 = time.time()
+    anim = Animation()
 
     print("Press q to close the windows")
 
@@ -24,12 +25,11 @@ def animate(
         if time.time() - t0 > 1 / fps:
             t0 = time.time()
             i += 1
-
             img, ann = seq[i % len(seq)]
-            fs = FieldState(img, ann)
-            af = AnimationFrame(fs)
-            af.draw()
-            af.show()
+
+            anim.update(ann, img)
+            anim.draw()
+            anim.show()
 
         if cv2.waitKey(1) == ord("q"):
             # press q to terminate the loop
@@ -51,8 +51,7 @@ RECTANGLE_THICKNESS = 1
 
 
 @dataclass
-class AnimationFrame:
-    fs: FieldState
+class Animation(GameState):
     rpr_field_length: int = RPR_FIELD_LENGTH
     rpr_field_width: int = int(RPR_FIELD_LENGTH * FIELD_WIDTH / FIELD_LENGTH)
     rpr_ball_radius: int = int(RPR_FIELD_LENGTH * BALL_RADIUS / FIELD_LENGTH)
@@ -64,8 +63,21 @@ class AnimationFrame:
     rectangle_thickness: int = RECTANGLE_THICKNESS
 
     def __post_init__(self):
+        super().__post_init__()
+        # Internal variables
+        self.detection = None  # current detection
+        self.main_img = (
+            None  # main window image, representing the image from the webcam
+        )
+        self.main_size = None  # main window image size
+        self.rpr_img = None  # representation image of the game (2d projection, obtained with relative positions)
+        self.rpr_size = None  # representation image size
+
+    def update(self, detection: Detection, image: Image):
+        super().update(detection)
+        self.detection = detection
         # Main window
-        self.main_img = self.fs.image
+        self.main_img = image
         self.main_size = np.array(self.main_img.shape[:-1][::-1])
 
         # Representation window
@@ -105,10 +117,10 @@ class AnimationFrame:
         return start, end
 
     def draw_rectangles_ball(self) -> None:
-        if self.fs.detection.ball is not None:
+        if self.detection.ball is not None:
             cv2.rectangle(
                 self.main_img,
-                *self.convert_rectangles(self.fs.detection.ball),
+                *self.convert_rectangles(self.detection.ball),
                 self.color_ball,
                 self.rectangle_thickness
             )
@@ -116,7 +128,7 @@ class AnimationFrame:
     def draw_rectangles_players(self) -> None:
         for (color, players) in zip(
             [self.color_red, self.color_blue],
-            [self.fs.detection.red_players, self.fs.detection.blue_players],
+            [self.detection.red_players, self.detection.blue_players],
         ):
             for player in players:
                 cv2.rectangle(
@@ -128,9 +140,9 @@ class AnimationFrame:
 
     def draw_rectangles_field(self) -> None:
         for field in [
-            self.fs.detection.field,
-            self.fs.margin_field,
-            self.fs.shifted_field,
+            self.detection.field,
+            self.margin_field,
+            self.shifted_field,
         ]:
             pts = np.array(
                 [(corner * self.main_size).astype(int) for corner in field.corners],
@@ -147,11 +159,6 @@ class AnimationFrame:
         self.draw_rectangles_ball()
         self.draw_rectangles_players()
         self.draw_rectangles_field()
-
-    def draw_representation(self) -> None:
-        self.draw_field_representation()
-        self.draw_ball_representation()
-        self.draw_players_representation()
 
     def draw_bar_representation(
         self, rel_x: float, color: Tuple[int, int, int]
@@ -178,7 +185,7 @@ class AnimationFrame:
         )
         self.draw_bar_representation(0.5, self.color_field)
 
-        if self.fs.is_red_up:
+        if self.is_red_up:
             color_up = self.color_red
             color_down = self.color_blue
         else:
@@ -201,10 +208,10 @@ class AnimationFrame:
         return (rel_pos * self.rpr_size + self.rpr_margin_vect).astype(int)
 
     def draw_ball_representation(self) -> None:
-        if self.fs.detection.ball is not None:
+        if self.ball is not None:
             cv2.circle(
                 self.rpr_img,
-                self.convert_relative_position(self.fs.ball),
+                self.convert_relative_position(self.ball),
                 self.rpr_ball_radius,
                 self.color_ball,
                 -1,
@@ -213,17 +220,24 @@ class AnimationFrame:
     def draw_players_representation(self) -> None:
         for (color, players) in zip(
             [self.color_red, self.color_blue],
-            [self.fs.red_players, self.fs.blue_players],
+            [self.red_players, self.blue_players],
         ):
             for position in players:
                 for player in players[position]:
-                    cv2.circle(
-                        self.rpr_img,
-                        self.convert_relative_position(player),
-                        self.rpr_ball_radius,  # TODO
-                        color,
-                        -1,
-                    )
+                    pts = [
+                        self.convert_relative_position(player)
+                        + coord * self.rpr_ball_radius
+                        for coord in [
+                            np.array([-1, -1]),
+                            np.array([1, 1]),
+                        ]
+                    ]
+                    cv2.rectangle(self.rpr_img, *pts, color, -1)
+
+    def draw_representation(self) -> None:
+        self.draw_field_representation()
+        self.draw_ball_representation()
+        self.draw_players_representation()
 
 
 if __name__ == "__main__":

@@ -3,8 +3,8 @@ from test.stats_computation.import_test_sequence import import_test_sequence
 
 
 def test_draw():
+    anim = Animation()
     itr = import_test_sequence()
     for img, ann in itr:
-        fs = FieldState(img, ann)
-        af = AnimationFrame(fs)
-        af.draw()
+        anim.update(ann, img)
+        anim.draw()

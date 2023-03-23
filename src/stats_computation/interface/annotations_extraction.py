@@ -66,7 +66,7 @@ def list_files(path: str) -> Tuple[List[str], List[str]]:
 
 def extract_detection_from_folder(
     path: str, field: DetectedField = None
-) -> AnnotatedSequence:
+) -> DetectionSequence:
     images, annotations = list_files(path)
     for image, annotation in zip(images, annotations):
         im = cv2.imread(os.path.join(path, image))

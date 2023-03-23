@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import cv2
@@ -32,7 +32,7 @@ def shift_field(field: DetectedField, rel_height: float) -> DetectedField:
     return DetectedField([pt1 - shift, pt2 - shift, pt3 - shift, pt4 - shift])
 
 
-def parse_players(players: List[Coordinates], up: bool) -> Dict[str, Coordinates]:
+def parse_players(players: List[Coordinates], up: bool) -> Dict[str, List[Coordinates]]:
     res = {"goal": [], "defense": [], "middle": [], "attack": []}
     for player in players:
         pos_x = player[1] if up else 1 - player[1]
