@@ -10,16 +10,15 @@ from src.stats_computation.stats_extraction import *
 from src.stats_computation.field_measures import *
 
 
-def animate(
-    itr: DetectionSequence,
-    fps: int = 30,
-):
+def animate(itr: DetectionSequence, fps: int = 30, scroll: bool = False):
     i = 0
     seq = [x for x in itr]
     t0 = time.time()
     anim = Animation()
 
     print("Press q to close the windows")
+    if scroll:
+        print("Press any key to get the next frame")
 
     while True:
         if time.time() - t0 > 1 / fps:
@@ -31,7 +30,12 @@ def animate(
             anim.draw()
             anim.show()
 
-        if cv2.waitKey(1) == ord("q"):
+        if scroll:
+            key = cv2.waitKey(0)
+        else:
+            key = cv2.waitKey(1)
+
+        if key == ord("q"):
             # press q to terminate the loop
             cv2.destroyAllWindows()
             break
@@ -244,4 +248,4 @@ if __name__ == "__main__":
     from test.stats_computation.import_test_sequence import import_test_sequence
 
     itr = import_test_sequence()
-    animate(itr)
+    animate(itr, scroll=True)
