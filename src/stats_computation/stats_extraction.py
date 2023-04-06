@@ -6,7 +6,12 @@ from src.stats_computation.game_state import *
 from src.stats_computation.field_measures import *
 from src.stats_computation.utils import distance_cm
 
-BALL_MOVEMENT_THRESHOLD = 3  # Threshold (in cm/s) to consider the ball in movement
+HAS_BALL_DISTANCE_THRESHOLD = (
+    5  # Maximum distance (in cm) to consider the closest player has the ball
+)
+HAS_BALL_SPEED_THRESHOLD = (
+    50  # Maximum speed (in cm/s) to consider the closest player has the ball
+)
 
 
 @dataclass
@@ -18,7 +23,6 @@ class GlobalStats:
     ball_max_speed: float = (
         None  # Maximum speed of the ball between two frames (in cm/s)
     )
-    ball_avg_speed: float = None  # Average speed of the ball (in cm/s)
 
 
 @dataclass
@@ -48,7 +52,6 @@ class StatsExtraction(GameState):
             []
         )  # displacement of the ball between two frames (in cm)
         self.ball_speed = []  # speed of the ball between two frames (in cm/s)
-        self.ball_movement = []  # True if the ball speed is above a threshold
         self.distance_ball_red_players = (
             []
         )  # distance (in cm) between the ball and every red player in the form {"goal": [...], "defense": [...], ...}
@@ -61,31 +64,35 @@ class StatsExtraction(GameState):
         self.closest_player_position = (
             []
         )  # closest player from the ball, of type PlayerPosition
+        self.has_ball = []  # True if the closest player has the ball
 
     def update(self, detection: Detection):
         super().update(detection)
         self.update_internal_variables()
         self.detect_events()
         self.update_global_stats()
-        print(self.global_stats)
-        print(self.ball_displacement[-1])
+        print("")
+        print("Déplacement ball :", self.ball_displacement[-1])
+        print("Vitesse ball :", self.ball_speed[-1])
         print(
-            self.closest_player_distance[-1],
+            "Closest player:",
             self.closest_player_position[-1],
+            self.closest_player_distance[-1],
         )
-        print(self.ball_speed[-1])
-        print(self.ball_movement[-1])
+        print("has ball :", self.has_ball[-1])
+        print(self.global_stats)
 
     def update_internal_variables(self) -> None:
         # Duration
         self.time.append(self.get_time())
         # Ball displacement and speed
         self.update_ball_displacement_speed()
-        self.update_ball_movement()
         # Distance between the ball and the players
         self.update_distance_ball_players()
         # Closest player
         self.update_closest_player()
+        # Has ball
+        self.update_has_ball()
 
     def detect_events(self) -> None:
         pass
@@ -117,35 +124,6 @@ class StatsExtraction(GameState):
             self.ball_displacement.append(None)
             self.ball_speed.append(None)
 
-    def update_ball_movement(self):
-        ball_speed = self.ball_speed[-1]
-        if ball_speed is None:
-            self.ball_movement.append(None)
-        else:
-            self.ball_movement.append(ball_speed > BALL_MOVEMENT_THRESHOLD)
-
-    def update_global_ball_displacement_speed(self):
-        # Ball displacement
-        if self.ball_displacement[-1] is not None:
-            self.global_stats.ball_total_distance += self.ball_displacement[-1]
-        # Ball speed
-        if self.ball_speed[-1] is not None:
-            # Ball max speed
-            if (
-                self.global_stats.ball_max_speed is None
-                or self.global_stats.ball_max_speed < self.ball_speed[-1]
-            ):
-                self.global_stats.ball_max_speed = self.ball_speed[-1]
-            # Ball average speed
-            if self.global_stats.ball_avg_speed is None:
-                self.global_stats.ball_avg_speed = self.ball_speed[-1]
-            nb_not_None = len(
-                [x for x in self.ball_speed if x is not None]
-            )  # TODO can be improved
-            self.global_stats.ball_avg_speed = (
-                nb_not_None * self.global_stats.ball_avg_speed + self.ball_speed[-1]
-            ) / (nb_not_None + 1)
-
     def update_distance_ball_players(self):
         for (players, distances) in [
             (self.red_players, self.distance_ball_red_players),
@@ -175,3 +153,27 @@ class StatsExtraction(GameState):
                         closest_player_position = PlayerPosition(team, position, idx)
         self.closest_player_distance.append(closest_player_distance)
         self.closest_player_position.append(closest_player_position)
+
+    def update_has_ball(self):
+        closest_player_distance = self.closest_player_distance[-1]
+        ball_speed = self.ball_speed[-1]
+        if ball_speed is None or closest_player_distance is None:
+            self.has_ball.append(None)
+        else:
+            self.has_ball.append(
+                closest_player_distance < HAS_BALL_DISTANCE_THRESHOLD
+                and ball_speed < HAS_BALL_SPEED_THRESHOLD
+            )
+
+    def update_global_ball_displacement_speed(self):
+        # Ball displacement
+        if self.ball_displacement[-1] is not None:
+            self.global_stats.ball_total_distance += self.ball_displacement[-1]
+        # Ball speed
+        if self.ball_speed[-1] is not None:
+            # Ball max speed
+            if (
+                self.global_stats.ball_max_speed is None
+                or self.global_stats.ball_max_speed < self.ball_speed[-1]
+            ):
+                self.global_stats.ball_max_speed = self.ball_speed[-1]

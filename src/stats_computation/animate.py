@@ -14,7 +14,7 @@ def animate(itr: DetectionSequence, fps: int = 30, scroll: bool = False):
     i = 0
     seq = [x for x in itr]
     t0 = time.time()
-    anim = Animation()
+    anim = Animation(fps=fps)
 
     print("Press q to close the windows")
     if scroll:
@@ -56,6 +56,7 @@ RECTANGLE_THICKNESS = 1
 
 @dataclass
 class Animation(StatsExtraction):
+    fps: int = None  # if None time is computed live
     rpr_field_length: int = RPR_FIELD_LENGTH
     rpr_field_width: int = int(RPR_FIELD_LENGTH * FIELD_WIDTH / FIELD_LENGTH)
     rpr_ball_radius: int = int(RPR_FIELD_LENGTH * BALL_RADIUS / FIELD_LENGTH)

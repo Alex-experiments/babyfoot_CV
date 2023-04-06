@@ -77,5 +77,5 @@ def distance_cm(pt1: Coordinates, pt2: Coordinates) -> float:
     if pt1 is None or pt2 is None:
         return None
     vect = pt1 - pt2
-    res = vect[0] ** 2 * FIELD_LENGTH + vect[1] ** 2 * FIELD_WIDTH
+    res = (vect[0] * FIELD_WIDTH) ** 2 + (vect[1] * FIELD_LENGTH) ** 2
     return res**0.5 * CM_PER_UNIT
