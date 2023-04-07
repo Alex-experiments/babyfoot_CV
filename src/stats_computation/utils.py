@@ -79,3 +79,15 @@ def distance_cm(pt1: Coordinates, pt2: Coordinates) -> float:
     vect = pt1 - pt2
     res = (vect[0] * FIELD_WIDTH) ** 2 + (vect[1] * FIELD_LENGTH) ** 2
     return res**0.5 * CM_PER_UNIT
+
+
+def angle_deg(pt1: Coordinates, pt2: Coordinates) -> float:
+    if pt1 is None or pt2 is None:
+        return None
+    vect = pt1 - pt2
+    vect_cm = np.array([vect[0] * FIELD_WIDTH, vect[1] * FIELD_LENGTH]) * CM_PER_UNIT
+    normalized = vect_cm / np.linalg.norm(vect_cm)
+    angle = np.arccos(normalized[0])
+    if normalized[1] < 0:
+        angle *= -1
+    return angle * 180 / np.pi
