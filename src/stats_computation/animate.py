@@ -30,6 +30,9 @@ def animate(itr: DetectionSequence, fps: int = 30, scroll: bool = False):
             anim.draw()
             anim.show()
 
+            delta_t = time.time() - t0
+            print(f"Update time: {delta_t}, faster than fps: {delta_t < 1 / fps}\n")
+
         if scroll:
             key = cv2.waitKey(0)
         else:
@@ -127,7 +130,7 @@ class Animation(StatsExtraction):
                 self.main_img,
                 *self.convert_rectangles(self.detection.ball),
                 self.color_ball,
-                self.rectangle_thickness
+                self.rectangle_thickness,
             )
 
     def draw_rectangles_players(self) -> None:
@@ -140,7 +143,7 @@ class Animation(StatsExtraction):
                     self.main_img,
                     *self.convert_rectangles(player),
                     color,
-                    self.rectangle_thickness
+                    self.rectangle_thickness,
                 )
 
     def draw_rectangles_field(self) -> None:

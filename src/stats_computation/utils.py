@@ -81,6 +81,13 @@ def distance_cm(pt1: Coordinates, pt2: Coordinates) -> float:
     return res**0.5 * CM_PER_UNIT
 
 
+def norm_cm(vect: Coordinates) -> float:
+    if vect is None:
+        return None
+    res = (vect[0] * FIELD_WIDTH) ** 2 + (vect[1] * FIELD_LENGTH) ** 2
+    return res**0.5 * CM_PER_UNIT
+
+
 def angle_deg(pt1: Coordinates, pt2: Coordinates) -> float:
     if pt1 is None or pt2 is None:
         return None
