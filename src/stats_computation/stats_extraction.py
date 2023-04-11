@@ -22,6 +22,8 @@ class GlobalStats:
     ball_max_speed: float = (
         None  # Maximum speed of the ball between two frames (in cm/s)
     )
+    possession_red: float = None
+    possession_blue: float = None
 
 
 @dataclass
@@ -88,9 +90,14 @@ class StatsExtraction(GameState):
         self.ball_angle_diff = (
             []
         )  # Difference in angle (in °) between the two last displacements
+        self.possession = []  # "red" or "blue"
 
-        # Events variables
+        # Variables for events
         self.no_ball_count = -1
+
+        # Variables for global stats
+        self.nb_possession_red = 0
+        self.nb_possession_blue = 0
 
     def update(self, detection: Detection):
         super().update(detection)
@@ -105,6 +112,7 @@ class StatsExtraction(GameState):
             self.closest_player_distance[-1],
         )
         print("Angle diff :", self.ball_angle_diff[-1])
+        print("Possession :", self.possession[-1])
 
         self.detect_events()
         self.update_global_stats()
@@ -123,6 +131,8 @@ class StatsExtraction(GameState):
         self.update_closest_player()
         # Ball displacement angles
         self.update_angles()
+        # Possession
+        self.update_possession()
 
     def detect_events(self) -> None:
         self.detect_shot()
@@ -132,7 +142,10 @@ class StatsExtraction(GameState):
         # Duration
         self.global_stats.duration = self.time[-1]
         # Ball displacement and speed
-        self.update_global_ball_displacement_speed()
+        self.update_global_ball_displacement()
+        self.update_global_ball_speed()
+        # Possession
+        self.update_global_possession()
 
     def get_time(self) -> float:
         if self.fps is None:
@@ -222,6 +235,20 @@ class StatsExtraction(GameState):
             self.ball_displacement_angle.append(None)
             self.ball_angle_diff.append(None)
 
+    def update_possession(self):
+        if self.no_ball_count == -1:
+            self.possession.append(None)
+        elif self.frame_idx > 1:
+            if self.ball_angle_diff[-1] is None:
+                self.possession.append(self.possession[-1])
+            # Change of direction of the ball = the closest player touch the ball
+            elif abs(self.ball_angle_diff[-1]) > 90:
+                self.possession.append(self.closest_player_position[-1].team)
+            else:
+                self.possession.append(self.possession[-1])
+        else:
+            self.possession.append(None)
+
     def change_closest_player(self) -> bool:
         if self.frame_idx > 1:
             previous = self.closest_player_position[-1]
@@ -278,11 +305,11 @@ class StatsExtraction(GameState):
             goal = Goal(self.frame_idx, team)
             print(f"===== {goal} =====")
 
-    def update_global_ball_displacement_speed(self):
-        # Ball displacement
+    def update_global_ball_displacement(self):
         if self.ball_displacement[-1] is not None:
             self.global_stats.ball_total_distance += self.ball_displacement[-1]
-        # Ball speed
+
+    def update_global_ball_speed(self):
         if self.ball_speed_norm[-1] is not None:
             # Ball max speed
             if (
@@ -290,3 +317,15 @@ class StatsExtraction(GameState):
                 or self.global_stats.ball_max_speed < self.ball_speed_norm[-1]
             ):
                 self.global_stats.ball_max_speed = self.ball_speed_norm[-1]
+
+    def update_global_possession(self):
+        poss = self.possession[-1]
+        if poss is None:
+            return
+        elif poss == "red":
+            self.nb_possession_red += 1
+        else:
+            self.nb_possession_blue += 1
+        total = self.nb_possession_red + self.nb_possession_blue
+        self.global_stats.possession_red = self.nb_possession_red / total
+        self.global_stats.possession_blue = self.nb_possession_blue / total
