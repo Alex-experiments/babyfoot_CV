@@ -254,8 +254,10 @@ class Animation(StatsExtraction):
 
 
 if __name__ == "__main__":
-    from test.stats_computation.import_test_sequence import import_test_sequence
+    from test.stats_computation.import_test_sequence import *
 
-    itr_fn = import_test_sequence
-    fps = 30
+    # itr_fn = import_test_sequence
+    # fps = TEST_FPS
+    itr_fn = import_camera_example_sequence
+    fps = CAMERA_EXAMPLE_FPS
     animate(itr_fn, fps=fps, scroll=True)
