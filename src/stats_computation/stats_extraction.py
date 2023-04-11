@@ -6,11 +6,9 @@ from src.stats_computation.game_state import *
 from src.stats_computation.field_measures import *
 from src.stats_computation.utils import distance_cm, angle_deg, norm_cm
 
-HAS_BALL_DISTANCE_THRESHOLD = (
-    5  # Maximum distance (in cm) to consider the closest player has the ball
-)
-HAS_BALL_SPEED_THRESHOLD = (
-    50  # Maximum speed (in cm/s) to consider the closest player has the ball
+
+SHOT_ACCELERATION_THRESHOLD = (
+    5000  # Above this acceleration (in cm/s^2) a shot is triggered
 )
 
 
@@ -37,6 +35,12 @@ class PlayerPosition:
     idx: int  # in range(5)
 
 
+@dataclass
+class Shot(Events):
+    player: PlayerPosition
+    ball_speed: float
+
+
 class StatsExtraction(GameState):
     fps: int = None  # if None time is computed live
 
@@ -46,6 +50,7 @@ class StatsExtraction(GameState):
         self.t0 = time.time()
         self.global_stats = GlobalStats()
         self.events = []
+
         # Internal variables (need to be updated each frame)
         self.time = []
         self.ball_displacement = (
@@ -77,13 +82,11 @@ class StatsExtraction(GameState):
         self.ball_angle_diff = (
             []
         )  # Difference in angle (in °) between the two last displacements
-        self.has_ball = []  # True if the closest player has the ball
 
     def update(self, detection: Detection):
         super().update(detection)
         self.update_internal_variables()
-        self.detect_events()
-        self.update_global_stats()
+
         print("Déplacement ball :", self.ball_displacement[-1])
         print("Vitesse ball :", self.ball_speed_norm[-1])
         print("Acceleration ball :", self.ball_acceleration_norm[-1])
@@ -93,7 +96,10 @@ class StatsExtraction(GameState):
             self.closest_player_distance[-1],
         )
         print("Angle diff :", self.ball_angle_diff[-1])
-        print("Has ball :", self.has_ball[-1])
+
+        self.detect_events()
+        self.update_global_stats()
+
         print(self.global_stats)
 
     def update_internal_variables(self) -> None:
@@ -108,11 +114,9 @@ class StatsExtraction(GameState):
         self.update_closest_player()
         # Ball displacement angles
         self.update_angles()
-        # Has ball
-        self.update_has_ball()
 
     def detect_events(self) -> None:
-        pass
+        self.detect_shot()
 
     def update_global_stats(self) -> None:
         # Duration
@@ -208,16 +212,25 @@ class StatsExtraction(GameState):
             self.ball_displacement_angle.append(None)
             self.ball_angle_diff.append(None)
 
-    def update_has_ball(self):
-        closest_player_distance = self.closest_player_distance[-1]
-        ball_speed = self.ball_speed_norm[-1]
-        if ball_speed is None or closest_player_distance is None:
-            self.has_ball.append(None)
-        else:
-            self.has_ball.append(
-                closest_player_distance < HAS_BALL_DISTANCE_THRESHOLD
-                and ball_speed < HAS_BALL_SPEED_THRESHOLD
-            )
+    def change_closest_player(self):
+        if self.frame_idx > 1:
+            previous = self.closest_player_position[-1]
+            next = self.closest_player_position[-2]
+            if previous is None or next is None:
+                return False
+            return previous != next
+        return False
+
+    def detect_shot(self):
+        if self.change_closest_player():
+            if self.ball_acceleration_norm[-1] > SHOT_ACCELERATION_THRESHOLD:
+                shot = Shot(
+                    self.frame_idx,
+                    self.closest_player_position[-2],
+                    self.ball_speed_norm[-1],
+                )
+                print(f"===== {shot} =====")
+                self.events.append(shot)
 
     def update_global_ball_displacement_speed(self):
         # Ball displacement
