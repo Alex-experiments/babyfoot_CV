@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Callable
 from dataclasses import dataclass
 import time
 
@@ -10,9 +10,10 @@ from src.stats_computation.stats_extraction import *
 from src.stats_computation.field_measures import *
 
 
-def animate(itr: DetectionSequence, fps: int = 30, scroll: bool = False):
-    i = 0
-    seq = [x for x in itr]
+def animate(
+    itr_fn: Callable[[], DetectionSequence], fps: int = 30, scroll: bool = False
+):
+    itr = itr_fn()
     t0 = time.time()
     anim = Animation(fps=fps)
 
@@ -23,8 +24,12 @@ def animate(itr: DetectionSequence, fps: int = 30, scroll: bool = False):
     while True:
         if time.time() - t0 > 1 / fps:
             t0 = time.time()
-            i += 1
-            img, ann = seq[i % len(seq)]
+
+            try:
+                img, ann = next(itr)
+            except StopIteration:
+                itr = itr_fn()
+                img, ann = next(itr)
 
             anim.update(ann, img)
             anim.draw()
@@ -251,5 +256,6 @@ class Animation(StatsExtraction):
 if __name__ == "__main__":
     from test.stats_computation.import_test_sequence import import_test_sequence
 
-    itr = import_test_sequence()
-    animate(itr, scroll=True)
+    itr_fn = import_test_sequence
+    fps = 30
+    animate(itr_fn, fps=fps, scroll=True)
