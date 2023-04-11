@@ -98,3 +98,11 @@ def angle_deg(pt1: Coordinates, pt2: Coordinates) -> float:
     if normalized[1] < 0:
         angle *= -1
     return angle * 180 / np.pi
+
+
+def in_goal_up_down(pt: Coordinates) -> Tuple[bool, bool]:
+    if pt is None:
+        return False, False
+    if abs(pt[0] - 0.5) < (GOAL_WIDTH / 2) / FIELD_WIDTH:
+        return pt[1] > 1, pt[1] < 0
+    return False, False

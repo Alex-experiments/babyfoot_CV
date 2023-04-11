@@ -4,12 +4,13 @@ import time
 from src.stats_computation.interface.classes import *
 from src.stats_computation.game_state import *
 from src.stats_computation.field_measures import *
-from src.stats_computation.utils import distance_cm, angle_deg, norm_cm
+from src.stats_computation.utils import *
 
 
 SHOT_ACCELERATION_THRESHOLD = (
     5000  # Above this acceleration (in cm/s^2) a shot is triggered
 )
+DISAPPEAR_BALL_NB_FRAME = 5  # Number of frames after which the ball is considered out
 
 
 @dataclass
@@ -39,6 +40,11 @@ class PlayerPosition:
 class Shot(Events):
     player: PlayerPosition
     ball_speed: float
+
+
+@dataclass
+class Goal(Events):
+    team: str  # "red" or "blue"
 
 
 class StatsExtraction(GameState):
@@ -83,6 +89,9 @@ class StatsExtraction(GameState):
             []
         )  # Difference in angle (in °) between the two last displacements
 
+        # Events variables
+        self.no_ball_count = -1
+
     def update(self, detection: Detection):
         super().update(detection)
         self.update_internal_variables()
@@ -117,6 +126,7 @@ class StatsExtraction(GameState):
 
     def detect_events(self) -> None:
         self.detect_shot()
+        self.detect_goal()
 
     def update_global_stats(self) -> None:
         # Duration
@@ -212,13 +222,26 @@ class StatsExtraction(GameState):
             self.ball_displacement_angle.append(None)
             self.ball_angle_diff.append(None)
 
-    def change_closest_player(self):
+    def change_closest_player(self) -> bool:
         if self.frame_idx > 1:
             previous = self.closest_player_position[-1]
             next = self.closest_player_position[-2]
             if previous is None or next is None:
                 return False
             return previous != next
+        return False
+
+    def get_disappear_ball(self) -> bool:
+        if self.no_ball_count == -1:
+            # It means the ball was out: wait until it reappears
+            if self.ball is not None:
+                self.no_ball_count = 0
+            return False
+        if self.ball is None:
+            self.no_ball_count += 1
+        if self.no_ball_count == DISAPPEAR_BALL_NB_FRAME:
+            self.no_ball_count = -1
+            return True
         return False
 
     def detect_shot(self):
@@ -231,6 +254,29 @@ class StatsExtraction(GameState):
                 )
                 print(f"===== {shot} =====")
                 self.events.append(shot)
+
+    def detect_goal(self):
+        if self.get_disappear_ball():
+            last_ball = self.history[-DISAPPEAR_BALL_NB_FRAME]["ball"]
+            # Test if last position inside goal
+            up1, down1 = in_goal_up_down(last_ball)
+            # Test if last position + displacement inside goal
+            if self.frame_idx > DISAPPEAR_BALL_NB_FRAME + 1:
+                penult_ball = self.history[-DISAPPEAR_BALL_NB_FRAME - 1]["ball"]
+                if penult_ball is not None:
+                    up2, down2 = in_goal_up_down(last_ball + (last_ball - penult_ball))
+                    up1 = up1 or up2
+                    down1 = down1 or down2
+            # Trigger event
+            if up1 or down1:
+                if up1 and self.is_red_up:
+                    team = "blue"
+                    self.global_stats.score_blue += 1
+                else:
+                    team = "red"
+                    self.global_stats.score_red += 1
+            goal = Goal(self.frame_idx, team)
+            print(f"===== {goal} =====")
 
     def update_global_ball_displacement_speed(self):
         # Ball displacement
