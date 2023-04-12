@@ -73,10 +73,6 @@ class Detection:
     red_players: List[DetectedRedPlayer]
     blue_players: List[DetectedBluePlayer]
 
-    def __post_init__(self):
-        assert len(self.red_players) <= 11
-        assert len(self.blue_players) <= 11
-
 
 class Image(np.ndarray):
     pass

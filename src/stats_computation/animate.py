@@ -260,4 +260,4 @@ if __name__ == "__main__":
     # fps = TEST_FPS
     itr_fn = import_camera_example_sequence
     fps = CAMERA_EXAMPLE_FPS
-    animate(itr_fn, fps=fps, scroll=True)
+    animate(itr_fn, fps=fps, scroll=False)

@@ -73,29 +73,6 @@ class GameState:
         )
         self.red_players = parse_players(red_players, self.is_red_up)
         self.blue_players = parse_players(blue_players, not self.is_red_up)
-        # try:
-        #     self.red_players = parse_players(red_players, self.is_red_up)
-        # except Exception:
-        #     print("error occured while parsing players")
-        #     zero = np.array([0.0, 0.0])
-        #     self.red_players = {
-        #         "goal": [zero],
-        #         "defense": [zero] * 2,
-        #         "middle": [zero] * 5,
-        #         "attack": [zero] * 3,
-        #     }
-
-        # try:
-        #     self.blue_players = parse_players(blue_players, not self.is_red_up)
-        # except Exception:
-        #     print("error occured while parsing players")
-        #     zero = np.array([0.0, 0.0])
-        #     self.blue_players = {
-        #         "goal": [zero],
-        #         "defense": [zero] * 2,
-        #         "middle": [zero] * 5,
-        #         "attack": [zero] * 3,
-        #     }
 
     def update_history(self) -> None:
         current_data = {

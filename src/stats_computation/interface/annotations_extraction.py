@@ -99,7 +99,14 @@ def extract_detection_from_file(
         convert=convert,
         im_size=im_size,
     )
-    ball = None if len(balls) == 0 else DetectedBall(*(balls[0]))
+    if len(balls) > 1:
+        ball = None
+        print(f"Warning: ball detection problem ({len(balls)} balls detected)")
+    elif len(balls) == 0:
+        # Not an error because the ball can be hidden or go out of the field
+        ball = None
+    else:
+        ball = DetectedBall(*(balls[0]))
 
     # Red players extraction
     red_players = [

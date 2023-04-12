@@ -103,21 +103,21 @@ class StatsExtraction(GameState):
         super().update(detection)
         self.update_internal_variables()
 
-        print("Déplacement ball :", self.ball_displacement[-1])
-        print("Vitesse ball :", self.ball_speed_norm[-1])
-        print("Acceleration ball :", self.ball_acceleration_norm[-1])
-        print(
-            "Closest player:",
-            self.closest_player_position[-1],
-            self.closest_player_distance[-1],
-        )
-        print("Angle diff :", self.ball_angle_diff[-1])
-        print("Possession :", self.possession[-1])
+        # print("Déplacement ball :", self.ball_displacement[-1])
+        # print("Vitesse ball :", self.ball_speed_norm[-1])
+        # print("Acceleration ball :", self.ball_acceleration_norm[-1])
+        # print(
+        #     "Closest player:",
+        #     self.closest_player_position[-1],
+        #     self.closest_player_distance[-1],
+        # )
+        # print("Angle diff :", self.ball_angle_diff[-1])
+        # print("Possession :", self.possession[-1])
 
         self.detect_events()
         self.update_global_stats()
 
-        print(self.global_stats)
+        # print(self.global_stats)
 
     def update_internal_variables(self) -> None:
         # Duration
@@ -272,7 +272,7 @@ class StatsExtraction(GameState):
         return False
 
     def detect_shot(self):
-        if self.change_closest_player():
+        if self.change_closest_player() and self.ball_acceleration_norm[-1] is not None:
             if self.ball_acceleration_norm[-1] > SHOT_ACCELERATION_THRESHOLD:
                 shot = Shot(
                     self.frame_idx,
@@ -288,7 +288,7 @@ class StatsExtraction(GameState):
             # Test if last position inside goal
             up1, down1 = in_goal_up_down(last_ball)
             # Test if last position + displacement inside goal
-            if self.frame_idx > DISAPPEAR_BALL_NB_FRAME + 1:
+            if self.frame_idx > DISAPPEAR_BALL_NB_FRAME + 1 and last_ball is not None:
                 penult_ball = self.history[-DISAPPEAR_BALL_NB_FRAME - 1]["ball"]
                 if penult_ball is not None:
                     up2, down2 = in_goal_up_down(last_ball + (last_ball - penult_ball))
@@ -302,8 +302,8 @@ class StatsExtraction(GameState):
                 else:
                     team = "red"
                     self.global_stats.score_red += 1
-            goal = Goal(self.frame_idx, team)
-            print(f"===== {goal} =====")
+                goal = Goal(self.frame_idx, team)
+                print(f"===== {goal} =====")
 
     def update_global_ball_displacement(self):
         if self.ball_displacement[-1] is not None:

@@ -44,10 +44,6 @@ def parse_players(players: List[Coordinates], up: bool) -> Dict[str, List[Coordi
             res["middle"].append(player)
         else:
             res["attack"].append(player)
-    assert len(res["goal"]) == 1
-    assert len(res["defense"]) == 2
-    assert len(res["middle"]) == 5
-    assert len(res["attack"]) == 3
     res["goal"] = smooth_players(res["goal"], GOAL_REL_X if up else 1 - GOAL_REL_X, 0)
     res["defense"] = smooth_players(
         res["defense"], DEFENSE_REL_X if up else 1 - DEFENSE_REL_X, DEFENSE_REL_W
@@ -58,12 +54,22 @@ def parse_players(players: List[Coordinates], up: bool) -> Dict[str, List[Coordi
     res["attack"] = smooth_players(
         res["attack"], ATTACK_REL_X if up else 1 - ATTACK_REL_X, ATTACK_REL_W
     )
+    # Handle errors
+    for position, nb in [("goal", 1), ("defense", 2), ("middle", 5), ("attack", 3)]:
+        nb_real = len(res[position])
+        if nb_real != nb:
+            res[position] = []
+            print(
+                f"Warning: player detection problem for {position} ({nb_real} players detected)"
+            )
     return res
 
 
 def smooth_players(
     players: List[Coordinates], rel_x_bar: float, rel_w_bar: float
 ) -> List[Coordinates]:
+    if len(players) == 0:
+        return []
     if len(players) == 1:
         return [np.array([players[0][0], rel_x_bar])]
     mid = np.mean(players, axis=0)[0]
