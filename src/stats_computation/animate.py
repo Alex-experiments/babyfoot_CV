@@ -44,7 +44,7 @@ def animate(
             anim.show()
 
             delta_t = time.time() - t0
-            print(f"Update time: {delta_t}, faster than fps: {delta_t < 1 / fps}\n")
+            # print(f"Update time: {delta_t}, faster than fps: {delta_t < 1 / fps}\n")
 
         if scroll:
             key = cv2.waitKey(0)
@@ -55,6 +55,8 @@ def animate(
             # press q to terminate the loop
             cv2.destroyAllWindows()
             break
+
+    anim.show_stats()
 
 
 # Default parameters of AnimationFrame

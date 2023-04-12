@@ -9,6 +9,7 @@ from src.stats_computation.interface.classes import *
 from src.stats_computation.game_state import *
 from src.stats_computation.field_measures import *
 from src.stats_computation.utils import *
+from src.stats_computation.show_stats import show_stats
 
 
 SHOT_ACCELERATION_THRESHOLD = (
@@ -123,22 +124,8 @@ class StatsExtraction(GameState):
     def update(self, detection: Detection):
         super().update(detection)
         self.update_internal_variables()
-
-        # print("Déplacement ball :", self.ball_displacement[-1])
-        # print("Vitesse ball :", self.ball_speed_norm[-1])
-        # print("Acceleration ball :", self.ball_acceleration_norm[-1])
-        # print(
-        #     "Closest player:",
-        #     self.closest_player_position[-1],
-        #     self.closest_player_distance[-1],
-        # )
-        # print("Angle diff :", self.ball_angle_diff[-1])
-        # print("Possession :", self.possession[-1])
-
         self.detect_events()
         self.update_global_stats()
-
-        # print(self.global_stats)
 
         if self.frame_idx % SAVE_FREQUENCY == 0:
             self.save()
@@ -304,7 +291,6 @@ class StatsExtraction(GameState):
                     self.closest_player_position[-2],
                     self.ball_speed_norm[-1],
                 )
-                print(f"===== {shot} =====")
                 self.events.append(shot)
 
     def detect_goal(self):
@@ -328,7 +314,6 @@ class StatsExtraction(GameState):
                     team = "red"
                     self.global_stats.score_red += 1
                 goal = Goal(self.frame_idx, self.time[-1], team)
-                print(f"===== {goal} =====")
                 self.events.append(goal)
 
     def update_global_ball_displacement(self):
@@ -367,7 +352,10 @@ class StatsExtraction(GameState):
         res["possession"] = self.possession
         return res
 
-    def save(self):
+    def save(self) -> None:
         dictionary = self.build_dict()
         with open(os.path.join(SAVE_FOLDER, self.save_name), "w") as outfile:
             json.dump(dictionary, outfile)
+
+    def show_stats(self) -> None:
+        show_stats(os.path.join(SAVE_FOLDER, self.save_name))
