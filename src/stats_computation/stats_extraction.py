@@ -1,5 +1,9 @@
 from dataclasses import dataclass
+from typing import Dict, Any
 import time
+import datetime
+import os
+import json
 
 from src.stats_computation.interface.classes import *
 from src.stats_computation.game_state import *
@@ -11,6 +15,8 @@ SHOT_ACCELERATION_THRESHOLD = (
     5000  # Above this acceleration (in cm/s^2) a shot is triggered
 )
 DISAPPEAR_BALL_NB_FRAME = 5  # Number of frames after which the ball is considered out
+SAVE_FOLDER = os.path.join("stats")
+SAVE_FREQUENCY = 100  # Save data every x frames
 
 
 @dataclass
@@ -29,6 +35,10 @@ class GlobalStats:
 @dataclass
 class Events:
     frame: int
+    time: float
+
+    def json(self) -> Dict[str, Any]:
+        return {"name": self.__class__.__name__, **self.__dict__}
 
 
 @dataclass
@@ -43,14 +53,21 @@ class Shot(Events):
     player: PlayerPosition
     ball_speed: float
 
+    def json(self) -> Dict[str, Any]:
+        res = super().json()
+        res["player"] = self.player.__dict__
+        return res
+
 
 @dataclass
 class Goal(Events):
     team: str  # "red" or "blue"
 
 
+@dataclass
 class StatsExtraction(GameState):
     fps: int = None  # if None time is computed live
+    save_name: str = None  # Name of the file where stats will be saved
 
     def __post_init__(self):
         super().__post_init__()
@@ -58,6 +75,10 @@ class StatsExtraction(GameState):
         self.t0 = time.time()
         self.global_stats = GlobalStats()
         self.events = []
+        if self.save_name is None:
+            self.save_name = datetime.datetime.now().strftime(
+                "stats_%Y-%m-%d_%H-%M-%S.json"
+            )
 
         # Internal variables (need to be updated each frame)
         self.time = []
@@ -118,6 +139,9 @@ class StatsExtraction(GameState):
         self.update_global_stats()
 
         # print(self.global_stats)
+
+        if self.frame_idx % SAVE_FREQUENCY == 0:
+            self.save()
 
     def update_internal_variables(self) -> None:
         # Duration
@@ -276,6 +300,7 @@ class StatsExtraction(GameState):
             if self.ball_acceleration_norm[-1] > SHOT_ACCELERATION_THRESHOLD:
                 shot = Shot(
                     self.frame_idx,
+                    self.time[-1],
                     self.closest_player_position[-2],
                     self.ball_speed_norm[-1],
                 )
@@ -302,8 +327,9 @@ class StatsExtraction(GameState):
                 else:
                     team = "red"
                     self.global_stats.score_red += 1
-                goal = Goal(self.frame_idx, team)
+                goal = Goal(self.frame_idx, self.time[-1], team)
                 print(f"===== {goal} =====")
+                self.events.append(goal)
 
     def update_global_ball_displacement(self):
         if self.ball_displacement[-1] is not None:
@@ -329,3 +355,19 @@ class StatsExtraction(GameState):
         total = self.nb_possession_red + self.nb_possession_blue
         self.global_stats.possession_red = self.nb_possession_red / total
         self.global_stats.possession_blue = self.nb_possession_blue / total
+
+    def build_dict(self) -> Dict[str, Any]:
+        res = self.global_stats.__dict__.copy()
+        res["events"] = [event.json() for event in self.events]
+        res["time"] = self.time
+        res["ball_displacement"] = self.ball_displacement
+        res["ball_speed"] = self.ball_speed_norm
+        res["ball_acceleration"] = self.ball_acceleration_norm
+        res["ball_angle"] = self.ball_angle_diff
+        res["possession"] = self.possession
+        return res
+
+    def save(self):
+        dictionary = self.build_dict()
+        with open(os.path.join(SAVE_FOLDER, self.save_name), "w") as outfile:
+            json.dump(dictionary, outfile)

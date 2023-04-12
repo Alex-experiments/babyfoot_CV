@@ -11,11 +11,15 @@ from src.stats_computation.field_measures import *
 
 
 def animate(
-    itr_fn: Callable[[], DetectionSequence], fps: int = 30, scroll: bool = False
+    itr_fn: Callable[[], DetectionSequence],
+    fps: int = 30,
+    save_name: str = None,
+    scroll: bool = False,
+    loop: bool = False,
 ):
     itr = itr_fn()
     t0 = time.time()
-    anim = Animation(fps=fps)
+    anim = Animation(fps=fps, save_name=save_name)
 
     print("Press q to close the windows")
     if scroll:
@@ -28,8 +32,12 @@ def animate(
             try:
                 img, ann = next(itr)
             except StopIteration:
-                itr = itr_fn()
-                img, ann = next(itr)
+                anim.save()
+                if loop:
+                    itr = itr_fn()
+                    img, ann = next(itr)
+                else:
+                    break
 
             anim.update(ann, img)
             anim.draw()
@@ -64,7 +72,6 @@ RECTANGLE_THICKNESS = 1
 
 @dataclass
 class Animation(StatsExtraction):
-    fps: int = None  # if None time is computed live
     rpr_field_length: int = RPR_FIELD_LENGTH
     rpr_field_width: int = int(RPR_FIELD_LENGTH * FIELD_WIDTH / FIELD_LENGTH)
     rpr_ball_radius: int = int(RPR_FIELD_LENGTH * BALL_RADIUS / FIELD_LENGTH)
@@ -256,8 +263,8 @@ class Animation(StatsExtraction):
 if __name__ == "__main__":
     from test.stats_computation.import_test_sequence import *
 
-    # itr_fn = import_test_sequence
-    # fps = TEST_FPS
-    itr_fn = import_camera_example_sequence
-    fps = CAMERA_EXAMPLE_FPS
-    animate(itr_fn, fps=fps, scroll=False)
+    itr_fn = import_test_sequence
+    fps = TEST_FPS
+    # itr_fn = import_camera_example_sequence
+    # fps = CAMERA_EXAMPLE_FPS
+    animate(itr_fn, fps=fps, save_name="experiment.json", scroll=False, loop=False)
