@@ -17,21 +17,18 @@ def extract_object_from_annotation(
     label: int,
     convert: bool = False,
     im_size: np.ndarray = None,
-    raw_corners: List[Coordinates] = None,
 ) -> List[List[Coordinates]]:
     objects = annotation.loc[annotation["label"] == label].to_dict("records")
     res = [
         [np.array([object["x"], object["y"]]), np.array([object["lx"], object["ly"]])]
         for object in objects
     ]
-    # if convert:
-    #     res = [convert_coord(x, im_size, raw_corners) for x in res]
+    if convert:
+        res = [convert_coord(x, im_size) for x in res]
     return res
 
 
-def extract_field_from_file(
-    filepath: str, im_size: np.ndarray
-) -> Tuple[DetectedField, List[Coordinates]]:
+def extract_field_from_file(filepath: str, im_size: np.ndarray) -> DetectedField:
     with open(filepath) as f:
         for line in f:
             if "CORNERS" in line:
@@ -41,14 +38,10 @@ def extract_field_from_file(
                 corners = [[int(corner[0]), int(corner[1])] for corner in corners]
                 raw_corners = corners
                 corners = [
-                    np.array([corner[0] / im_size[0], corner[1] / im_size[1]])
+                    np.array([corner[0] / im_size[1], corner[1] / im_size[0]])
                     for corner in corners
                 ]
-                # corners = [
-                #     np.array([corner[0] / im_size[1], corner[1] / im_size[0]])
-                #     for corner in corners
-                # ]
-                return DetectedField(corners), raw_corners
+                return DetectedField(corners)
 
 
 def get_skiprows(filepath: str) -> List[int]:
@@ -61,27 +54,25 @@ def get_skiprows(filepath: str) -> List[int]:
 
 
 def convert_coord(
-    pts: List[Coordinates],
+    obj: List[Coordinates],
     im_size: np.ndarray,
-    raw_corners: List[Coordinates],
-) -> Coordinates:
-    pts1 = np.float32([[0, 0], [1, 0], [1, 1], [0, 1]])
-    pts2 = np.float32(raw_corners)
-    matrix = cv2.getPerspectiveTransform(pts1, pts2)
-    transformed_pts = cv2.perspectiveTransform(np.array(pts).reshape(1, -1, 2), matrix)
-    res = []
-    for coord in transformed_pts.reshape(-1, 2):
-        res.append(np.array([coord[0] / im_size[1], coord[1] / im_size[0]]))
-    print(res)
+) -> List[Coordinates]:
+    pos, width = obj
+    res = [
+        np.array(
+            [
+                pos[0] * im_size[0] / im_size[1],
+                pos[1] * im_size[1] / im_size[0],
+            ]
+        ),
+        np.array(
+            [
+                width[0] * im_size[0] / im_size[1],
+                width[1] * im_size[1] / im_size[0],
+            ]
+        ),
+    ]
     return res
-    # res = []
-    # for coord in pts:
-    #     res.append(
-    #         np.array(
-    #             [coord[0] / im_size[0] * im_size[1], coord[1] / im_size[1] * im_size[0]]
-    #         )
-    #     )
-    # return res
 
 
 def extract_detection_from_file(
@@ -91,15 +82,15 @@ def extract_detection_from_file(
     sep: str = " ",
     convert: bool = False,
 ) -> Detection:
+    # Import from csv
     skiprows = get_skiprows(filepath)
     annotation = pd.read_csv(
         filepath, sep=sep, names=["label", "x", "y", "lx", "ly"], skiprows=skiprows
     )
+
     # Field extraction
     if field is None:
-        field, raw_corners = extract_field_from_file(filepath, im_size)
-    else:
-        raw_corners = None
+        field = extract_field_from_file(filepath, im_size)
 
     # Ball extraction
     balls = extract_object_from_annotation(
@@ -107,7 +98,6 @@ def extract_detection_from_file(
         LABEL_BALL,
         convert=convert,
         im_size=im_size,
-        raw_corners=raw_corners,
     )
     ball = None if len(balls) == 0 else DetectedBall(*(balls[0]))
 
@@ -119,7 +109,6 @@ def extract_detection_from_file(
             LABEL_RED_PLAYER,
             convert=convert,
             im_size=im_size,
-            raw_corners=raw_corners,
         )
     ]
 
@@ -131,7 +120,6 @@ def extract_detection_from_file(
             LABEL_BLUE_PLAYER,
             convert=convert,
             im_size=im_size,
-            raw_corners=raw_corners,
         )
     ]
 
