@@ -20,24 +20,22 @@ def show_stats(file_path: str) -> None:
     print(f"Score blue: {dictionary['score_blue']}")
     print(f"Duration: {dictionary['duration']:.0f} s")
     print(f"Ball maximum speed: {dictionary['ball_max_speed']:.0f} cm/s")
-    print(
-        f"Ball total travelled distance: {dictionary['ball_total_distance']:.0f} cm/s"
-    )
+    print(f"Ball total travelled distance: {dictionary['ball_total_distance']:.0f} cm")
     print(f"Possession red: {round(100*dictionary['possession_red'])} %")
     print(f"Possession blue: {round(100*dictionary['possession_blue'])} %")
 
     # Plot curves
+    plt.plot(dictionary["time"], dictionary["ball_speed"], label="Ball Speed (in cm/s)")
+    plt.plot(
+        dictionary["time"],
+        scale(dictionary["ball_acceleration"], 0.1),
+        label="Ball Acceleration (in 10x cm/s^2)",
+    )
     plt.plot(
         dictionary["time"],
         dictionary["ball_angle"],
         label="Ball Deviation Angle (in °)",
     )
-    plt.plot(
-        dictionary["time"],
-        scale(dictionary["ball_acceleration"], 0.1),
-        label="Ball Acceleration (in mm/s^2)",
-    )
-    plt.plot(dictionary["time"], dictionary["ball_speed"], label="Ball Speed (in cm/s)")
 
     # Modify background for possession
     ax.fill_between(
