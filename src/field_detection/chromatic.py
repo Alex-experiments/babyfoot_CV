@@ -115,6 +115,6 @@ class ChromaticDetection(FieldDetection):
 
 
 if __name__ == "__main__":
-    initial_image = cv2.imread("image.jpg")
+    initial_image = cv2.imread("test/field_detection/test_images/image.jpg")
     cd = ChromaticDetection(intermediate_image_saving=True)
     cd.detect(initial_image)
