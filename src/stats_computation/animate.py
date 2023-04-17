@@ -20,14 +20,16 @@ def animate(
     itr = itr_fn()
     t0 = time.time()
     anim = Animation(fps=fps, save_name=save_name)
+    current_time = 0.0
 
     print("Press q to close the windows")
     if scroll:
         print("Press any key to get the next frame")
 
     while True:
-        if time.time() - t0 > 1 / fps:
-            t0 = time.time()
+        if time.time() - t0 > (1 / fps if fps is not None else current_time):
+            if fps is not None:
+                t0 = time.time()
 
             try:
                 data = next(itr)
