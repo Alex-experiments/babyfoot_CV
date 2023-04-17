@@ -30,16 +30,22 @@ def animate(
             t0 = time.time()
 
             try:
-                img, ann = next(itr)
+                data = next(itr)
             except StopIteration:
                 anim.save()
                 if loop:
                     itr = itr_fn()
-                    img, ann = next(itr)
+                    data = next(itr)
                 else:
                     break
 
-            anim.update(ann, img)
+            img, ann = data[:2]
+            if len(data) == 3:
+                current_time = data[2]
+            else:
+                current_time = None
+
+            anim.update(ann, img, current_time=current_time)
             anim.draw()
             anim.show()
 
@@ -95,8 +101,8 @@ class Animation(StatsExtraction):
         self.rpr_img = None  # representation image of the game (2d projection, obtained with relative positions)
         self.rpr_size = None  # representation image size
 
-    def update(self, detection: Detection, image: Image):
-        super().update(detection)
+    def update(self, detection: Detection, image: Image, current_time: float = None):
+        super().update(detection, current_time=current_time)
         self.detection = detection
         # Main window
         self.main_img = image

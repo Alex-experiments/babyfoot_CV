@@ -67,7 +67,7 @@ class Goal(Events):
 
 @dataclass
 class StatsExtraction(GameState):
-    fps: int = None  # if None time is computed live
+    fps: int = None  # if None time is computed live unless it is given to update method
     save_name: str = None  # Name of the file where stats will be saved
 
     def __post_init__(self):
@@ -80,6 +80,7 @@ class StatsExtraction(GameState):
             self.save_name = datetime.datetime.now().strftime(
                 "stats_%Y-%m-%d_%H-%M-%S.json"
             )
+        self.current_time = None  # Used when time is given to update method
 
         # Internal variables (need to be updated each frame)
         self.time = []
@@ -121,8 +122,10 @@ class StatsExtraction(GameState):
         self.nb_possession_red = 0
         self.nb_possession_blue = 0
 
-    def update(self, detection: Detection):
+    def update(self, detection: Detection, current_time: float = None):
         super().update(detection)
+        self.current_time = current_time
+
         self.update_internal_variables()
         self.detect_events()
         self.update_global_stats()
@@ -159,6 +162,8 @@ class StatsExtraction(GameState):
         self.update_global_possession()
 
     def get_time(self) -> float:
+        if self.current_time is not None:
+            return self.current_time
         if self.fps is None:
             return time.time() - self.t0
         return self.frame_idx / self.fps
