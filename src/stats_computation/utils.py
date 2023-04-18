@@ -7,6 +7,9 @@ from src.stats_computation.interface.classes import *
 from src.stats_computation.field_measures import *
 
 
+ANGLE_NORM_LIMIT = 0.1  # Bellow this distance (in cm), no angle is computed (points are considered too close for the angle to be significative)
+
+
 class Perspective:
     def __init__(self, field: DetectedField):
         pts1 = np.float32(field.corners)
@@ -99,7 +102,10 @@ def angle_deg(pt1: Coordinates, pt2: Coordinates) -> float:
         return None
     vect = pt1 - pt2
     vect_cm = np.array([vect[0] * FIELD_WIDTH, vect[1] * FIELD_LENGTH]) * CM_PER_UNIT
-    normalized = vect_cm / np.linalg.norm(vect_cm)
+    norm = np.linalg.norm(vect_cm)
+    if norm < ANGLE_NORM_LIMIT:
+        return None
+    normalized = vect_cm / norm
     angle = np.arccos(normalized[0])
     if normalized[1] < 0:
         angle *= -1

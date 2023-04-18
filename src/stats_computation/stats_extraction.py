@@ -302,23 +302,25 @@ class StatsExtraction(GameState):
         if self.get_disappear_ball():
             last_ball = self.history[-DISAPPEAR_BALL_NB_FRAME]["ball"]
             # Test if last position inside goal
-            up1, down1 = in_goal_up_down(last_ball)
+            down1, up1 = in_goal_up_down(last_ball)
             # Test if last position + displacement inside goal
             if self.frame_idx > DISAPPEAR_BALL_NB_FRAME + 1 and last_ball is not None:
                 penult_ball = self.history[-DISAPPEAR_BALL_NB_FRAME - 1]["ball"]
                 if penult_ball is not None:
-                    up2, down2 = in_goal_up_down(last_ball + (last_ball - penult_ball))
-                    up1 = up1 or up2
+                    down2, up2 = in_goal_up_down(last_ball + (last_ball - penult_ball))
                     down1 = down1 or down2
+                    up1 = up1 or up2
             # Trigger event
             if up1 or down1:
-                if up1 and self.is_red_up:
+                if (up1 and self.is_red_up) or (down1 and not self.is_red_up):
                     team = "blue"
                     self.global_stats.score_blue += 1
                 else:
                     team = "red"
                     self.global_stats.score_red += 1
-                goal = Goal(self.frame_idx, self.time[-1], team)
+                goal = Goal(
+                    self.frame_idx - DISAPPEAR_BALL_NB_FRAME, self.time[-1], team
+                )
                 self.events.append(goal)
 
     def update_global_ball_displacement(self):
