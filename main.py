@@ -1,8 +1,9 @@
 from typing import Callable, Iterator, Tuple
 
-from src.stats_computation.interface.classes import Image, Detection
+from src.stats_computation.interface.classes import *
 from tracking_pipeline import track_pipeline
 from src.stats_computation.animate import animate
+from src.stats_computation.interface.annotations_extraction import *
 
 
 def convert_track(
@@ -10,9 +11,58 @@ def convert_track(
 ) -> Iterator[Tuple[Image, Detection, float]]:
     track_data = track_fn(**kwargs)
     for data in track_data:
-        yield Detection(
-            data["corners"], data["ball"], data["red_players"], data["blue_players"]
-        ), data["img"], data["time"]
+        im_size = data["img"].shape
+        # Field
+        corners = data["corners"]
+        corners = [
+            np.array([corner[0] / im_size[1], corner[1] / im_size[0]])
+            for corner in corners
+        ]
+        field = DetectedField(corners)
+        # Ball
+        objects = [data["ball"]]
+        balls = [
+            [
+                np.array([object[0], object[1]]),
+                np.array([object[2], object[3]]),
+            ]
+            for object in objects
+        ]
+        balls = [convert_coord(x, im_size) for x in balls]
+        if len(balls) > 1:
+            ball = None
+            print(f"Warning: ball detection problem ({len(balls)} balls detected)")
+        elif len(balls) == 0:
+            # Not an error because the ball can be hidden or go out of the field
+            ball = None
+        else:
+            ball = DetectedBall(*(balls[0]))
+        # Red players
+        objects = data["red_players"]
+        red_players = [
+            [
+                np.array([object[0], object[1]]),
+                np.array([object[2], object[3]]),
+            ]
+            for object in objects
+        ]
+        red_players = [convert_coord(x, im_size) for x in red_players]
+        red_players = [DetectedRedPlayer(*obj) for obj in red_players]
+        # Blue players
+        objects = data["blue_players"]
+        blue_players = [
+            [
+                np.array([object[0], object[1]]),
+                np.array([object[2], object[3]]),
+            ]
+            for object in objects
+        ]
+        blue_players = [convert_coord(x, im_size) for x in blue_players]
+        blue_players = [DetectedBluePlayer(*obj) for obj in blue_players]
+
+        yield Detection(field, ball, red_players, blue_players), data["img"], data[
+            "time"
+        ]
 
 
 def main(

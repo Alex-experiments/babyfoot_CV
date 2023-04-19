@@ -36,7 +36,6 @@ def extract_field_from_file(filepath: str, im_size: np.ndarray) -> DetectedField
                 corners = [corner.split("]")[0] for corner in corners]
                 corners = [corner.split(", ") for corner in corners]
                 corners = [[int(corner[0]), int(corner[1])] for corner in corners]
-                raw_corners = corners
                 corners = [
                     np.array([corner[0] / im_size[1], corner[1] / im_size[0]])
                     for corner in corners
