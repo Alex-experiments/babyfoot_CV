@@ -73,7 +73,7 @@ def main(
 ) -> None:
     itr_fn = lambda: convert_track(
         track_pipeline,
-        rom_cam=from_cam,
+        from_cam=from_cam,
         vis=vis,
         check_field_every=check_field_every,
         batch_size=batch_size,
