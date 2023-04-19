@@ -122,7 +122,7 @@ def show_stats(file_path: str) -> None:
     plt.ylabel("Metric")
     plt.legend()
     plt.title("Game statistics")
-
+    plt.savefig("stats.jpg")
     plt.show()
 
 

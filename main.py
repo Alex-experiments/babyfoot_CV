@@ -20,23 +20,25 @@ def convert_track(
         ]
         field = DetectedField(corners)
         # Ball
-        objects = [data["ball"]]
-        balls = [
-            [
-                np.array([object[0], object[1]]),
-                np.array([object[2], object[3]]),
-            ]
-            for object in objects
-        ]
-        balls = [convert_coord(x, im_size) for x in balls]
-        if len(balls) > 1:
-            ball = None
-            print(f"Warning: ball detection problem ({len(balls)} balls detected)")
-        elif len(balls) == 0:
+        if data["ball"] is None:
             # Not an error because the ball can be hidden or go out of the field
             ball = None
         else:
-            ball = DetectedBall(*(balls[0]))
+            objects = [data["ball"]]
+            balls = [
+                [
+                    np.array([object[0], object[1]]),
+                    np.array([object[2], object[3]]),
+                ]
+                for object in objects
+            ]
+            balls = [convert_coord(x, im_size) for x in balls]
+            if len(balls) > 1:
+                ball = None
+                print(f"Warning: ball detection problem ({len(balls)} balls detected)")                
+            else:
+                ball = DetectedBall(*(balls[0]))
+            
         # Red players
         objects = data["red_players"]
         red_players = [
@@ -60,7 +62,7 @@ def convert_track(
         blue_players = [convert_coord(x, im_size) for x in blue_players]
         blue_players = [DetectedBluePlayer(*obj) for obj in blue_players]
 
-        yield Detection(field, ball, red_players, blue_players), data["img"], data[
+        yield data["img"], Detection(field, ball, red_players, blue_players), data[
             "time"
         ]
 

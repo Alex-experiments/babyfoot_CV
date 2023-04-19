@@ -88,7 +88,7 @@ def track_pipeline(from_cam = True, vis = False, check_field_every=50, batch_siz
     if from_cam:
         reader = CamReader()
     else:
-        reader = VideoReader("./dataset_creation/videos/perso_6.avi")
+        reader = VideoReader("../babyfoot_CV/dataset_creation/videos/perso_6.avi")
 
     fd = FieldTracker()
     tracker = BallTracker()
@@ -168,7 +168,7 @@ def track_pipeline(from_cam = True, vis = False, check_field_every=50, batch_siz
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    track_data = track_pipeline(vis=False, from_cam=True)
+    track_data = track_pipeline(vis=True, from_cam=True)
     for i, data in enumerate(track_data):
         print(i, data["time"])
 
