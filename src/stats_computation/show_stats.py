@@ -1,6 +1,9 @@
 import json
+import os
 
 import matplotlib.pyplot as plt
+
+SAVE_FOLDER = os.path.join("stats")
 
 
 def scale(data, factor):
@@ -122,7 +125,8 @@ def show_stats(file_path: str) -> None:
     plt.ylabel("Metric")
     plt.legend()
     plt.title("Game statistics")
-    plt.savefig("stats.jpg")
+
+    plt.savefig(os.path.join(SAVE_FOLDER, "stats.jpg"))
     plt.show()
 
 
