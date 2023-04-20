@@ -1,4 +1,4 @@
-# Babyfoot Computer Vision
+# :soccer: Babyfoot Computer Vision :soccer:
 
 
 ## :book: Description
@@ -32,15 +32,15 @@ make install
 
 ## :ferris_wheel: Usage
 
-### Compute Statistics
+#### Pipeline
 
-To run the whole pipeline of the project (the camera, the detection of the field, the ball and the players, the 3D reconstruction and the computation of the statistics), run the following command :
+To run the whole pipeline of the project (the video acquisition, the detection of the field, the ball and the players, the 3D reconstruction and the computation of the statistics), run the following command :
 
 ```
 make run
 ```
 
-### Compute Statistics
+#### Tests
 
 We implemented some tests, that can be run using pytest :
 
