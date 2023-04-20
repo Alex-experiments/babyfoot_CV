@@ -17,3 +17,9 @@ push-dataset:
 
 pytest:
 	poetry run pytest test
+
+run:
+	poetry run python3 main.py
+
+show-stats:
+	poetry run python3 -m src.stats_computation.show_stats

@@ -20,26 +20,34 @@ def animate(
     itr = itr_fn()
     t0 = time.time()
     anim = Animation(fps=fps, save_name=save_name)
+    current_time = 0.0
 
     print("Press q to close the windows")
     if scroll:
         print("Press any key to get the next frame")
 
     while True:
-        if time.time() - t0 > 1 / fps:
-            t0 = time.time()
+        if time.time() - t0 > (1 / fps if fps is not None else current_time):
+            if fps is not None:
+                t0 = time.time()
 
             try:
-                img, ann = next(itr)
+                data = next(itr)
             except StopIteration:
                 anim.save()
                 if loop:
                     itr = itr_fn()
-                    img, ann = next(itr)
+                    data = next(itr)
                 else:
                     break
 
-            anim.update(ann, img)
+            img, ann = data[:2]
+            if len(data) == 3:
+                current_time = data[2]
+            else:
+                current_time = None
+
+            anim.update(ann, img, current_time=current_time)
             anim.draw()
             anim.show()
 
@@ -95,8 +103,8 @@ class Animation(StatsExtraction):
         self.rpr_img = None  # representation image of the game (2d projection, obtained with relative positions)
         self.rpr_size = None  # representation image size
 
-    def update(self, detection: Detection, image: Image):
-        super().update(detection)
+    def update(self, detection: Detection, image: Image, current_time: float = None):
+        super().update(detection, current_time=current_time)
         self.detection = detection
         # Main window
         self.main_img = image

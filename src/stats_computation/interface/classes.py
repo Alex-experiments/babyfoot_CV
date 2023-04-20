@@ -68,8 +68,8 @@ class DetectedField:
 
 @dataclass
 class Detection:
-    field: DetectedField | None
-    ball: DetectedBall | None
+    field: DetectedField #| None
+    ball: DetectedBall #| None
     red_players: List[DetectedRedPlayer]
     blue_players: List[DetectedBluePlayer]
 

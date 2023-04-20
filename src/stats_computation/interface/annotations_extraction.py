@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Callable
 import os
 
 import numpy as np
@@ -6,6 +6,7 @@ import pandas as pd
 import cv2
 
 from src.stats_computation.interface.classes import *
+from src.tracker.tracking_pipeline import track_pipeline
 
 LABEL_BALL = 0
 LABEL_RED_PLAYER = 1
@@ -36,7 +37,6 @@ def extract_field_from_file(filepath: str, im_size: np.ndarray) -> DetectedField
                 corners = [corner.split("]")[0] for corner in corners]
                 corners = [corner.split(", ") for corner in corners]
                 corners = [[int(corner[0]), int(corner[1])] for corner in corners]
-                raw_corners = corners
                 corners = [
                     np.array([corner[0] / im_size[1], corner[1] / im_size[0]])
                     for corner in corners
@@ -164,3 +164,68 @@ def extract_detection_from_folder(
             convert=convert,
         )
         yield im, annotation
+
+
+def convert_track(**kwargs) -> Iterator[Tuple[Image, Detection, float]]:
+    track_data = track_pipeline(**kwargs)
+    for data in track_data:
+        im_size = data["img"].shape
+        # Field
+        corners = data["corners"]
+        corners = [
+            np.array([corner[0] / im_size[1], corner[1] / im_size[0]])
+            for corner in corners
+        ]
+        field = DetectedField(corners)
+        # Ball
+        if data["ball"] is None:
+            # Not an error because the ball can be hidden or go out of the field
+            ball = None
+        else:
+            objects = [data["ball"]]
+            balls = [
+                [
+                    np.array([object[0], object[1]]),
+                    np.array([object[2], object[3]]),
+                ]
+                for object in objects
+            ]
+            balls = [convert_coord(x, im_size) for x in balls]
+            if len(balls) > 1:
+                ball = None
+                print(f"Warning: ball detection problem ({len(balls)} balls detected)")
+            else:
+                ball = DetectedBall(*(balls[0]))
+
+        # Red players
+        objects = data["red_players"]
+        red_players = [
+            [
+                np.array([object[0], object[1]]),
+                np.array([object[2], object[3]]),
+            ]
+            for object in objects
+        ]
+        red_players = [convert_coord(x, im_size) for x in red_players]
+        red_players = [DetectedRedPlayer(*obj) for obj in red_players]
+        # Blue players
+        objects = data["blue_players"]
+        blue_players = [
+            [
+                np.array([object[0], object[1]]),
+                np.array([object[2], object[3]]),
+            ]
+            for object in objects
+        ]
+        blue_players = [convert_coord(x, im_size) for x in blue_players]
+        blue_players = [DetectedBluePlayer(*obj) for obj in blue_players]
+
+        yield data["img"], Detection(field, ball, red_players, blue_players), data[
+            "time"
+        ]
+
+
+def curry_convert_track(
+    **kwargs,
+) -> Callable[[], Iterator[Tuple[Image, Detection, float]]]:
+    return lambda: convert_track(**kwargs)

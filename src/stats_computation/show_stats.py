@@ -1,6 +1,9 @@
 import json
+import os
 
 import matplotlib.pyplot as plt
+
+SAVE_FOLDER = os.path.join("stats")
 
 
 def scale(data, factor):
@@ -123,11 +126,12 @@ def show_stats(file_path: str) -> None:
     plt.legend()
     plt.title("Game statistics")
 
+    plt.savefig(os.path.join(SAVE_FOLDER, "stats.jpg"))
     plt.show()
 
 
 if __name__ == "__main__":
     import os
 
-    file_path = os.path.join("stats", "experiment.json")
+    file_path = os.path.join(SAVE_FOLDER, "main.json")
     show_stats(file_path)
