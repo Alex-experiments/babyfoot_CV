@@ -133,5 +133,5 @@ def show_stats(file_path: str) -> None:
 if __name__ == "__main__":
     import os
 
-    file_path = os.path.join("stats", "experiment.json")
+    file_path = os.path.join(SAVE_FOLDER, "main.json")
     show_stats(file_path)
