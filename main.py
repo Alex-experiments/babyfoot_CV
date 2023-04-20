@@ -1,7 +1,7 @@
 from typing import Callable, Iterator, Tuple
 
 from src.stats_computation.interface.classes import *
-from tracking_pipeline import track_pipeline
+from src.tracker.tracking_pipeline import track_pipeline
 from src.stats_computation.animate import animate
 from src.stats_computation.interface.annotations_extraction import *
 
@@ -35,10 +35,10 @@ def convert_track(
             balls = [convert_coord(x, im_size) for x in balls]
             if len(balls) > 1:
                 ball = None
-                print(f"Warning: ball detection problem ({len(balls)} balls detected)")                
+                print(f"Warning: ball detection problem ({len(balls)} balls detected)")
             else:
                 ball = DetectedBall(*(balls[0]))
-            
+
         # Red players
         objects = data["red_players"]
         red_players = [
